@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html manifest="/cache.appcache">
+<head>
+	<script src="https://holodevuserresource.s3.amazonaws.com/three.min.js"></script>
+	<!--add library above-->
+  <meta charset="utf-8">
+  <title>holodev</title>
+</head>
+
+<body>
+<div id="yaw" style="display: none;">0</div>
+<div id="pitch" style="display: none;">0</div>
+<div id="roll" style="display: none;">0</div>
+</body>
+<script>
+  function listener(event){ 
+    var msg = JSON.parse(event.data);   
+    if(msg.type ==="sensor") {
+     //yaw = Number(msg.data.yaw);
+     //pitch = Number(msg.data.pitch);
+     //roll = Number(msg.data.roll);
+     var yaw = document.getElementById("yaw");
+     yaw.innerText = msg.data.yaw;
+     var pitch = document.getElementById("pitch");
+     pitch.innerText = msg.data.pitch;
+     var roll = document.getElementById("roll");
+     roll.innerText = msg.data.roll;
+    }
+    //console.log("Final Iframe Got: " + yaw + ", " + pitch + ", " + roll);    
+  } 
+  addEventListener("message", listener, false);
+  
+   document.onkeydown=function(event)
+   {
+     if(event && event.keyCode == 73){
+ 
+       var strValue = document.body.style.marginTop;
+       var data = parseInt(strValue);
+       if(strValue == ""){
+           data = 0;
+         }
+        data = data - 1;
+	   document.body.style.marginTop = data + "px";
+      }
+     if(event && event.keyCode == 74){
+          var strValue = document.body.style.marginLeft;
+          var data = parseInt(strValue);
+          if(strValue == ""){
+           data = 0;
+           }
+          data = data - 1;
+	      document.body.style.marginLeft = data + "px";
+       }
+     if(event && event.keyCode == 75){
+         var strValue = document.body.style.marginTop;
+         var data = parseInt(strValue);
+         if(strValue == ""){
+             data = 0;
+           }
+          data = data + 1;
+	     document.body.style.marginTop = data + "px";
+       }
+     if(event && event.keyCode == 76){
+          var strValue = document.body.style.marginLeft;
+          var data = parseInt(strValue);
+          if(strValue == ""){
+           data = 0;
+           }
+          data = data + 1;
+	      document.body.style.marginLeft = data + "px";
+       }
+
+   }
+</script>
+
+</html>
