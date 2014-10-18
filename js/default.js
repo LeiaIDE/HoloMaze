@@ -61,7 +61,7 @@ var code = worker.toString();
 		//console.log("y_g:", y_g);
 
 		document.body.appendChild(renderer.domElement);
-		scene = new Physijs.Scene;
+		scene = new Physijs.Scene();
 		var GravitySim = -9.8 * 20;
 		scene.setGravity(new THREE.Vector3(0, GravitySim, 0));
 		//scene.addEventListener(	'update', function() {scene.simulate( undefined, 0.001 );});
@@ -93,8 +93,8 @@ var code = worker.toString();
             new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg'), transparent: true, opacity: 1.0 }),
             //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/wood.jpg'), transparent: true, opacity: 1.0 }),
 	       //material_g,
-	    	.9, 
-	    	.2 
+	    	0.9, 
+	    	0.2 
 	    );
         //// box ground
 		ground = new Physijs.BoxMesh(
@@ -116,8 +116,8 @@ var code = worker.toString();
     transparent: true
 }),
            //material_g,
-			.9, 
-			.2 
+			0.9, 
+			0.2 
 		);
 		bottom = new Physijs.PlaneMesh(
             new THREE.PlaneGeometry(yard_x * 2, yard_z * 2),
@@ -135,7 +135,7 @@ var code = worker.toString();
 		var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/leai_logo.png'), transparent: true, opacity: 1.0 });
 		var logo_geom = new THREE.PlaneGeometry(yard_x * 63 / 30, yard_z * 14 / 30);
 		logo_1 = new THREE.Mesh(logo_geom, logo_mat);
-		logo_1.position.x = 0//wall_thick / 2;
+		logo_1.position.x = 0;//wall_thick / 2;
 		logo_1.position.y = 15;
 		logo_1.position.z = -30; 
 		logo_1.rotation.x = -90;
@@ -151,8 +151,8 @@ var code = worker.toString();
          new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg') }),
    //      new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/wood.jpg') }),
   //     new THREE.MeshLambertMaterial({ transparent: false, opacity: 0.5 }),
-                    .4, 
-                    .8
+                    0.4, 
+                    0.8
                 );
 		var bumper_geom_x = new THREE.BoxGeometry(wall_thick, bush, yard_z * 2);
 	    // x1
@@ -163,14 +163,14 @@ var code = worker.toString();
 		bumper_x1.receiveShadow = true;
 		scene.add(bumper_x1);
 	    // x2
-		var material_x2 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x000021 }), .4, .8);
+		var material_x2 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x000021 }), 0.4, 0.8);
 		bumper_x2 = new Physijs.BoxMesh(bumper_geom_x, bumper_material, 0);
 		bumper_x2.position.y = bush / 2 + ground_thick / 2;
 		bumper_x2.position.x = yard_x - wall_thick / 2;
 		bumper_x2.receiveShadow = true;
 		scene.add(bumper_x2);
 	    // z1
-		var material_z1 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0xFED100 }), .4, .8);
+		var material_z1 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0xFED100 }), 0.4, 0.8);
 		var bumper_geom_z = new THREE.BoxGeometry(yard_z * 2-2.5*wall_thick, bush, wall_thick);
 		bumper_z1 = new Physijs.BoxMesh(bumper_geom_z, bumper_material, 0);
 		bumper_z1.position.y = bush / 2 + ground_thick / 2;
@@ -178,7 +178,7 @@ var code = worker.toString();
 		bumper_z1.receiveShadow = true;
 		scene.add(bumper_z1);
 	    // z2
-		var material_z2 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x4B0021 }), .4, .8);
+		var material_z2 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x4B0021 }), 0.4, 0.8);
 		bumper_z2 = new Physijs.BoxMesh(bumper_geom_z, bumper_material, 0);
 		bumper_z2.position.y = bush / 2 + ground_thick / 2;
 		bumper_z2.position.z = yard_x - wall_thick / 2;
@@ -190,8 +190,8 @@ var code = worker.toString();
 		var bumper_s_material = Physijs.createMaterial(
   //      new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_6.jpg'), transparent: true, opacity: 0.0 }),
         new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.2 }),
-                    .4, 
-                    .8 
+                    0.4, 
+                    0.8 
                 );
         var wall_strongScale =5 ;
         var bumper_geom_x_s = new THREE.BoxGeometry(wall_thick , bush * wall_strongScale, yard_z * 2);
@@ -520,7 +520,7 @@ var code = worker.toString();
 		scene.add(ball);
 
 
-	};
+	}
 	
 	function handleCollision(collided_with, linearVelocity, angularVelocity) {
 
@@ -575,7 +575,7 @@ var code = worker.toString();
 	            scene.remove(door_1);
 	            break;	        
 	    }
-	};
+	}
 	function handleCollision2(collided_with, linearVelocity, angularVelocity) {
 
 	    if (collided_with.id != ball.id)
@@ -631,7 +631,7 @@ var code = worker.toString();
 
 
 	    }
-	};
+	}
 	function handleCollision3(collided_with, linearVelocity, angularVelocity) {
 
 	    if (collided_with.id != ball.id)
@@ -707,7 +707,7 @@ var code = worker.toString();
 	            scene.remove(tar_2);
 	            break;
 	    }
-	};
+	}
 		
 	function render() {
 	    var roll = document.getElementById("roll");
@@ -723,7 +723,7 @@ var code = worker.toString();
 	        totalRoll = THREE.Math.degToRad(z_g + renderer.GyroSimRoll);
 	    else
 	        totalRoll = THREE.Math.degToRad(z_g);
-	    if (renderer.GyroSimPitch != undefined)
+	    if (renderer.GyroSimPitch !== undefined)
 	        totalPitch = THREE.Math.degToRad(x_g + renderer.GyroSimPitch);
 	    else
 	        totalPitch = THREE.Math.degToRad(x_g);
@@ -1426,7 +1426,7 @@ var code = worker.toString();
 	        document.body.style.marginLeft = data + "px";
 	    }
 
-	}
+	};
 
 
 	var game_step_timer;
