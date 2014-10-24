@@ -50,80 +50,39 @@ var LeiaWebGLRenderer = function (parameters) {
 
     if (parameters.camFov == undefined) {
         this.view64fov = 50;
-        console.log("camFov undefined, set it to default 40!");
+        console.log("camFov undefined, set it to default 50!");
     } else {
         this.view64fov = parameters.camFov;
         console.log("set camFov:" + parameters.camFov);
     }
-
     var _canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElement('canvas'),
     _viewportWidth,
 	_viewportHeight;
-
-    var _SwizzleVertexShaderSrc =
-  "varying vec2 vUv;" +
-  "void main() {" +
-  "    vUv = uv;" +
-  "    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );" +
-  "}"
-    ;
-
-    var _SwizzleFragmentShaderSrc =
-	"precision highp float;"+
-	"varying  vec2 vUv; 			\n" +
-	"uniform sampler2D uSampler; 			\n" +
-	"uniform vec2 renderSize;              \n " +
-	"float getPixel( in float amplitude, in sampler2D texture, in vec2 viewId, in vec2 sPixId) {  \n" +
-    "vec2 id  = vec2( ( sPixId.s + viewId.s*renderSize.x/8.0 )/renderSize.x + 1.0/(2.0*renderSize.x), ( sPixId.t + viewId.t*renderSize.y/8.0 )/renderSize.y+ 1.0/(2.0*renderSize.y) ); \n" +
-    "vec4 p   = texture2D( texture, id );\n" +
-    "float pb = amplitude * ( p.r + p.g + p.b ) / 3.0;\n" +
-    "return pb;\n" +
-	"}\n" +
-	"void main(void) {						\n" +
-	    "vec2 pixelCoord = vec2( floor((vUv.s)*renderSize.x), floor(vUv.t*renderSize.y) ); "+
-		"pixelCoord      = vec2(max(pixelCoord.s - 0.0, 0.0), max(pixelCoord.t - 0.0, 0.0));"+
-		"vec2 viewId     = vec2(   mod(pixelCoord.s,8.0)  ,   mod(pixelCoord.t,8.0)  ); "+
-		"vec2 sPixId     = vec2( floor(pixelCoord.s/8.0)  , floor(pixelCoord.t/8.0)  ); "+
-		"float fc        = 0.0;"+
-		"fc = getPixel( 1.0, uSampler, viewId, sPixId);"+
-		"fc = 1.0 - fc;"+
-		"gl_FragColor = vec4(fc, fc, fc, 1.0);"+
-	"}"
-	/*"varying  vec2 vUv; 			\n" +
-	"uniform sampler2D uSampler; 			\n" +
-	"uniform vec2 renderSize;              \n " +
-	"void main(void) {						\n" +
-		"float dXIndex = (vUv.s)*renderSize.x;	\n" +
-		"float dYIndex = vUv.t*renderSize.y;	\n" +
-		"int nXIndex = int(dXIndex/8.0);			\n" +
-		"int nYIndex = int(dYIndex/8.0);			\n" +
-		"int tmpX = int(dXIndex);					\n" +
-		"int tmpY = int(dYIndex);					\n" +
-		"int nXStride = tmpX - nXIndex*8;			\n" +
-		"int nYStride = tmpY - nYIndex*8;			\n" +
-		"int nNewX = nXStride*int(renderSize.x/8.0) + nXIndex;  		\n" +
-		"int nNewY = nYStride*int(renderSize.y/8.0) + nYIndex;		\n" +
-	    "float s = float(nNewX)/renderSize.x;				\n" +
-		"float t = float(nNewY)/renderSize.y;				\n" +
-		"vec4 vColor = texture2D(uSampler, vec2(s,t));" +
-		" float gray = vColor.x*0.35 + vColor.y*0.35 + vColor.z*0.3;   \n" +  //*0.35 + vColor.y*0.35 + vColor.z*0.3
-		" gray = gray;   \n" +
-        "gl_FragColor = vec4(gray,gray,gray,1.0); \n" +
-	"}"*/
-    ;
+    // for 64 view YSCL
+    this.setRenderMode = function (renderMode) {
+        this._renderMode = renderMode;
+    }
+    this.setFov = function (fov) {
+        this.view64fov = fov;
+    }
+    
     // for 64 view arrangement YSCL
     this.GGyroSimView = {
-        left: 0.75,
-        bottom: 0.5,
-        width: 0.25,
-        height: 0.25,
+        //left: 0.75,
+        //bottom: 0.5,
+        //width: 0.25,
+        //height: 0.25,
+        left: 0.0,
+        bottom: 0.0,
+        width: 1.0,
+        height: 1.0,
         up: [0, 1, 0],
     };
     var simulateGyro = function (object) {
         var _this = this;
         this.screen = { left: 0, top: 0, width: 0, height: 0 };
         this.screen.left = _canvas.width * _that.GGyroSimView.left;
-        this.screen.top = _canvas.height * (_that.GGyroSimView.bottom - _that.GGyroSimView.height);
+        this.screen.top = _canvas.height * (1.0-_that.GGyroSimView.bottom - _that.GGyroSimView.height);
         this.screen.width = _canvas.width * _that.GGyroSimView.width;
         this.screen.height = _canvas.height * _that.GGyroSimView.height;
         var _lastPos = new THREE.Vector2();
@@ -185,7 +144,7 @@ var LeiaWebGLRenderer = function (parameters) {
         _that.GyroRealYaw = 0;
         this.update = function () {
             _this.screen.left = _canvas.width * _that.GGyroSimView.left;
-            _this.screen.top = _canvas.height * (_that.GGyroSimView.bottom - _that.GGyroSimView.height);
+            _this.screen.top = _canvas.height * (1.0-_that.GGyroSimView.bottom - _that.GGyroSimView.height);
             _this.screen.width = _canvas.width * _that.GGyroSimView.width;
             _this.screen.height = _canvas.height * _that.GGyroSimView.height;
 
@@ -202,6 +161,9 @@ var LeiaWebGLRenderer = function (parameters) {
     // global view
     this.GObserveView = {
         left: 0.0,
+        //bottom: 0.0,
+        //width: 1.0,
+        //height: 1.0,
         bottom: 0.5,
         width: 0.25,
         height: 0.25,
@@ -228,7 +190,7 @@ var LeiaWebGLRenderer = function (parameters) {
         this.minDistance = 0;
         this.maxDistance = Infinity;
         this.screen.left = 0;
-        this.screen.top = _canvas.height * (_that.GObserveView.bottom - _that.GObserveView.height);
+        this.screen.top = _canvas.height * (1.0-_that.GObserveView.bottom - _that.GObserveView.height);
         this.screen.width = _canvas.width * _that.GObserveView.width;
         this.screen.height = _canvas.height * _that.GObserveView.height;
 
@@ -370,7 +332,7 @@ var LeiaWebGLRenderer = function (parameters) {
 
         this.update = function () {
             _this.screen.left = 0;
-            _this.screen.top = _canvas.height * (_that.GObserveView.bottom - _that.GObserveView.height);
+            _this.screen.top = _canvas.height * (1.0-_that.GObserveView.bottom - _that.GObserveView.height);
             _this.screen.width = _canvas.width * _that.GObserveView.width;
             _this.screen.height = _canvas.height * _that.GObserveView.height;
             _eye.subVectors(_this.object.position, _this.target);
@@ -497,7 +459,6 @@ var LeiaWebGLRenderer = function (parameters) {
     };
     drapControls.prototype = Object.create(THREE.EventDispatcher.prototype);
 
-
     var AxisPickerMater = function (parameters) {
         THREE.MeshBasicMaterial.call(this);
         this.depthTest = false;
@@ -538,7 +499,6 @@ var LeiaWebGLRenderer = function (parameters) {
         };
     };
     AxisPickerLineMater.prototype = Object.create(THREE.LineBasicMaterial.prototype);
-
     var AxisPickerTransForm = function (pickerSize) {
         var _this = this;
         var bShowShell = false;
@@ -636,7 +596,6 @@ var LeiaWebGLRenderer = function (parameters) {
         };
 
     };
-
     AxisPickerTransForm.prototype = Object.create(THREE.Object3D.prototype);
     //AxisPickerTransForm.prototype.update = function (rotation) {
     //    this.traverse(function (child) {
@@ -696,7 +655,6 @@ var LeiaWebGLRenderer = function (parameters) {
         this.init();
     };
     AxisPickerTranslate.prototype = Object.create(AxisPickerTransForm.prototype);
-
     var pickControls = function (camera, domElement, pickerSize) {
         THREE.Object3D.call(this);
         domElement = (domElement !== undefined) ? domElement : document;
@@ -709,7 +667,7 @@ var LeiaWebGLRenderer = function (parameters) {
         this.axis = null;
         this.screen = { left: 0, top: 0, width: 0, height: 0 };
         this.screen.left = 0;
-        this.screen.top = _canvas.height * (_that.GObserveView.bottom - _that.GObserveView.height);
+        this.screen.top = _canvas.height * (1.0-_that.GObserveView.bottom - _that.GObserveView.height);
         this.screen.width = _canvas.width * _that.GObserveView.width;
         this.screen.height = _canvas.height * _that.GObserveView.height;
         var ray = new THREE.Raycaster();
@@ -735,7 +693,7 @@ var LeiaWebGLRenderer = function (parameters) {
         };
         this.update = function () {
             _this.screen.left = 0;
-            _this.screen.top = _canvas.height * (_that.GObserveView.bottom - _that.GObserveView.height);
+            _this.screen.top = _canvas.height * (1.0-_that.GObserveView.bottom - _that.GObserveView.height);
             _this.screen.width = _canvas.width * _that.GObserveView.width;
             _this.screen.height = _canvas.height * _that.GObserveView.height;
             if (_this.object == undefined)
@@ -861,20 +819,6 @@ var LeiaWebGLRenderer = function (parameters) {
     }
     pickControls.prototype = Object.create(THREE.Object3D.prototype);
 
-    // for 64 view YSCL
-    this.setRenderMode = function (renderMode) {
-        this._renderMode = renderMode;
-    }
-
-    this.setFov = function (fov) {
-        this.view64fov = fov;
-    }
-
-	var _swizzleRenderTarget;
-	var cameraSWIZZLE;
-	var LEIA_output;
-	var swizzleMesh;
-	var materialSwizzle;
     this.Leia_setSize = function (width, height, updateStyle) {
         _canvas.width = width * this.devicePixelRatio;
         _canvas.height = height * this.devicePixelRatio;
@@ -884,29 +828,374 @@ var LeiaWebGLRenderer = function (parameters) {
             _canvas.style.width = width + 'px';
             _canvas.style.height = height + 'px';
         }
-   
         this.setSize(width, height, updateStyle);
-		cameraSWIZZLE = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, -1, 1 );
-		cameraSWIZZLE.position.z = 0;
-		LEIA_output = new THREE.Scene();
-		if (LEIA_output.children.length > 0) LEIA_output.remove( swizzleMesh);
-		var swizzleBackgroundGeometry = new THREE.PlaneGeometry(width, height);
-		_swizzleRenderTarget 		= new THREE.WebGLRenderTarget(width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat } );
-		_swizzleRenderTarget.generateMipmaps = false;
-		materialSwizzle = new THREE.ShaderMaterial( {
-				uniforms: {
-						"uSampler"	: { type: "t", value: _swizzleRenderTarget }, 
-						"renderSize"		: { type: "v2", value:new THREE.Vector2(width,height)}
-						},
-		vertexShader: _SwizzleVertexShaderSrc,
-		fragmentShader: _SwizzleFragmentShaderSrc,
-		depthWrite: false
-	} );
-		swizzleMesh = new THREE.Mesh( swizzleBackgroundGeometry, materialSwizzle );
-		LEIA_output.add( swizzleMesh );
+        if (this._shaderManager !== undefined)
+            this._shaderManager.changeSzie(width, height);
     };
 
-    this.getCameraPosition = function (position, targetPosition, up, npart, xIndex, yIndex, Gradient, EachTarPos, spanMode) {
+    // shaders start
+    this.nShaderMode = 0; // 0:basic; 1:sharpen; 2:surpersample
+    this._shaderManager = undefined;
+    this.bShaderManInit = false;
+    var CShaderManager = function () {
+        this._swizzleRenderTarget = undefined;
+        this.cameraSWIZZLE = undefined;
+        this.LEIA_output;
+        this.swizzleMesh;
+        this.materialSwizzle;
+        this.matBasic;
+        this.matSuperSample;
+        this.matSharpen;
+        this._swizzleRenderTargetSftX;
+        this._swizzleRenderTargetSftY;
+        this._swizzleRenderTargetSftXY;
+        this.width = _viewportWidth;
+        this.height = _viewportHeight;
+
+        this.cameraSWIZZLE = new THREE.OrthographicCamera(this.width / -2, this.width / 2, this.height / 2, this.height / -2, -1, 1);
+        this.cameraSWIZZLE.position.z = 0;
+        this.LEIA_output = new THREE.Scene();
+        if (this.LEIA_output.children.length > 0) this.LEIA_output.remove(this.swizzleMesh);
+        var swizzleBackgroundGeometry = new THREE.PlaneGeometry(this.width, this.height);
+        var _SwizzleVertexShaderSrc =
+        "varying vec2 vUv;" +
+        "void main() {" +
+        "    vUv = uv;" +
+        "    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );" +
+        "}";
+        var _SwizzleFragmentShaderSrc =
+        "precision highp float;" +
+        "varying  vec2 vUv; 			\n" +
+        "uniform sampler2D tNormalViews; 			\n" +
+        "uniform vec2 renderSize;              \n " +
+        "float getPixel( in float amplitude, in sampler2D texture, in vec2 viewId, in vec2 sPixId) {  \n" +
+            "vec2 id  = vec2( ( sPixId.s + viewId.s*renderSize.x/8.0 )/renderSize.x + 1.0/(2.0*renderSize.x), ( sPixId.t + viewId.t*renderSize.y/8.0 )/renderSize.y+ 1.0/(2.0*renderSize.y) ); \n" +
+            "vec4 p   = texture2D( texture, id );\n" +
+            "float pb = amplitude * ( p.r + p.g + p.b ) / 3.0;\n" +
+            "return pb;\n" +
+            "}\n" +
+        "void main(void) {						\n" +
+            "vec2 pixelCoord = vec2( floor((vUv.s)*renderSize.x), floor(vUv.t*renderSize.y) ); " +
+            "pixelCoord      = vec2(max(pixelCoord.s - 0.0, 0.0), max(pixelCoord.t - 0.0, 0.0));" +
+            "vec2 viewId     = vec2(   mod(pixelCoord.s,8.0)  ,   mod(pixelCoord.t,8.0)  ); " +
+            "vec2 sPixId     = vec2( floor(pixelCoord.s/8.0)  , floor(pixelCoord.t/8.0)  ); " +
+            //"vec2 sPixId     = vec2(   mod(pixelCoord.s, 200.0)  ,   mod(pixelCoord.t, 150.0)  ); " +
+            //"vec2 viewId     = vec2( floor(pixelCoord.s/200.0)  , floor(pixelCoord.t/150.0)  ); " +
+            "float fc        = 0.0;" +
+            "fc = getPixel( 1.0, tNormalViews, viewId, sPixId);" +
+            "fc = 1.0 - fc;" +
+            "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
+        "}";
+        var _SuperSampleSwizzleFragmentShaderSrc =
+        "precision highp float;" +
+        "varying  vec2 vUv; 			\n" +
+        "uniform sampler2D tNormalViews; 			\n" +
+        "uniform sampler2D tSuperX; 			\n" +
+        "uniform sampler2D tSuperY; 			\n" +
+        "uniform sampler2D tSuperD; 			\n" +
+        "uniform vec2 renderSize;              \n " +
+        "float getPixel( in float amplitude, in sampler2D texture, in vec2 viewId, in vec2 sPixId) {  \n" +
+            "vec2 id  = vec2( ( sPixId.s + viewId.s*renderSize.x/8.0 )/renderSize.x + 1.0/(2.0*renderSize.x), ( sPixId.t + viewId.t*renderSize.y/8.0 )/renderSize.y+ 1.0/(2.0*renderSize.y) ); \n" +
+            "vec4 p   = texture2D( texture, id );\n" +
+            "float pb = amplitude * ( p.r + p.g + p.b ) / 3.0;\n" +
+            "return pb;\n" +
+            "}\n" +
+        "void main(void) {						\n" +
+            "vec2 pixelCoord = vec2( floor((vUv.s)*renderSize.x), floor(vUv.t*renderSize.y) ); " +
+            "pixelCoord      = vec2(max(pixelCoord.s - 0.0, 0.0), max(pixelCoord.t - 0.0, 0.0));" +
+            "vec2 viewId     = vec2(   mod(pixelCoord.s,8.0)  ,   mod(pixelCoord.t,8.0)  ); " +
+            "vec2 sPixId     = vec2( floor(pixelCoord.s/8.0)  , floor(pixelCoord.t/8.0)  ); " +
+            //"vec2 sPixId     = vec2(   mod(pixelCoord.s, 200.0)  ,   mod(pixelCoord.t, 150.0)  ); " +
+            //"vec2 viewId     = vec2( floor(pixelCoord.s/200.0)  , floor(pixelCoord.t/150.0)  ); " +
+            "float fc        = 0.0;" +
+            "fc = getPixel( 1.0, tNormalViews, viewId, sPixId);" +
+            "float imgCoeff = 1.0;" +
+            "float nnCoeff = 0.2;" +
+            "float nxnCoeff = 0.1;" +
+            "float coeff = imgCoeff+2.0*nnCoeff+nxnCoeff;" +
+            "fc = getPixel(imgCoeff, tNormalViews, viewId, sPixId);" +
+            "fc = fc+getPixel( nnCoeff, tSuperX, viewId, sPixId );" +
+            "fc = fc+getPixel( nnCoeff, tSuperY, viewId, sPixId );" +
+            "fc = fc+getPixel( nxnCoeff, tSuperD, viewId, sPixId );" +
+            "if (viewId.s > 0.0) { \n" +
+            "   coeff = coeff + nnCoeff + nxnCoeff;" +
+            "   fc = fc+getPixel( nnCoeff, tSuperX, viewId-vec2(1.0, 0.0), sPixId );" +
+            "   fc = fc+getPixel( nxnCoeff, tSuperD, viewId-vec2(1.0, 0.0), sPixId );" +
+            "}\n" +
+            "if (viewId.t > 0.0) { \n" +
+            "   coeff = coeff + nnCoeff + nxnCoeff;" +
+            "   fc = fc+getPixel( nnCoeff, tSuperY, viewId-vec2(0.0, 1.0), sPixId );" +
+            "   fc = fc+getPixel( nxnCoeff, tSuperD, viewId-vec2(0.0, 1.0), sPixId );" +
+            "   if (viewId.s > 0.0) { \n" +
+            "       coeff = coeff + nxnCoeff;" +
+            "       fc = fc+getPixel( nxnCoeff, tSuperD, viewId-vec2(1.0, 1.0), sPixId );" +
+            "   }\n" +
+            "}\n" +
+            "fc = fc/coeff;" +
+            "fc = 1.0 - fc;" +
+            "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
+        "}";
+
+        var invA = [1.1146, -0.1909, 0.0343, 0.0, 0.0, 0.0];
+        var _SharpenSwizzleFragmentShaderSrc =
+        "precision highp float;" +
+        "varying  vec2 vUv; 			\n" +
+        "uniform sampler2D tNormalViews; 			\n" +
+        "uniform vec2 renderSize;              \n " +
+        "float getPixel( in float amplitude, in sampler2D texture, in vec2 viewId, in vec2 sPixId) {  \n" +
+            "vec2 id  = vec2( ( sPixId.s + viewId.s*renderSize.x/8.0 )/renderSize.x + 1.0/(2.0*renderSize.x), ( sPixId.t + viewId.t*renderSize.y/8.0 )/renderSize.y+ 1.0/(2.0*renderSize.y) ); \n" +
+            "vec4 p   = texture2D( texture, id );\n" +
+            "float pb = amplitude * ( p.r + p.g + p.b ) / 3.0;\n" +
+            "return pb;\n" +
+            "}\n" +
+         LEIA_internal_fragmentShaderFunction_getSharpPixel5() +
+        "void main(void) {						\n" +
+            "vec2 pixelCoord = vec2( floor((vUv.s)*renderSize.x), floor(vUv.t*renderSize.y) ); " +
+            "pixelCoord      = vec2(max(pixelCoord.s - 0.0, 0.0), max(pixelCoord.t - 0.0, 0.0));" +
+            "vec2 viewId     = vec2(   mod(pixelCoord.s,8.0)  ,   mod(pixelCoord.t,8.0)  ); " +
+            "vec2 sPixId     = vec2( floor(pixelCoord.s/8.0)  , floor(pixelCoord.t/8.0)  ); " +
+            //"vec2 sPixId     = vec2(   mod(pixelCoord.s, 200.0)  ,   mod(pixelCoord.t, 150.0)  ); " +
+            //"vec2 viewId     = vec2( floor(pixelCoord.s/200.0)  , floor(pixelCoord.t/150.0)  ); " +
+            "float fc        = 0.0;" +
+            "fc = getSharpPixel( invA, tNormalViews, viewId, sPixId);\n" +
+            "fc = 1.0 - fc;" +
+            "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
+        "}";
+        function LEIA_internal_fragmentShaderFunction_getSharpPixel5() {
+            var snipplet;
+            var B1X = 8.0 - 1.0;
+            var B1Y = 8.0 - 1.0;
+            var B2X = 8.0 - 2.0;
+            var B2Y = 8.0 - 2.0;
+            snipplet = "uniform float invA [6]; \n";
+            snipplet += (false) ? "vec4" : "float";
+            snipplet += " getSharpPixel( in float amplitudes [6], in sampler2D texture, in vec2 viewId, in vec2 sPixId) { \n";
+            snipplet += "    ";
+            snipplet += "    float s1m = viewId.s - 1.0;\n";
+            snipplet += "    float s1p = viewId.s + 1.0;\n";
+            snipplet += "    float t1m = viewId.t - 1.0;\n";
+            snipplet += "    float t1p = viewId.t + 1.0;\n";
+            snipplet += "    float s2m = viewId.s - 2.0;\n";
+            snipplet += "    float s2p = viewId.s + 2.0;\n";
+            snipplet += "    float t2m = viewId.t - 2.0;\n";
+            snipplet += "    float t2p = viewId.t + 2.0;\n";
+            snipplet += "    ";
+            snipplet += (false) ? "vec4" : "float";
+            snipplet += " p = getPixel( amplitudes[0], texture, viewId, sPixId);\n";
+            snipplet += "    float q = amplitudes[0];\n";
+            snipplet += "    if (viewId.s > 0.0) { \n";
+            snipplet += "        p += getPixel( amplitudes[1], texture, vec2( s1m, viewId.t ), sPixId );\n";
+            snipplet += "        q += amplitudes[1];\n";
+            snipplet += "        if (viewId.t > 0.0) { \n";
+            snipplet += "            p += getPixel( amplitudes[2], texture, vec2( s1m, t1m ), sPixId );\n";
+            snipplet += "            q += amplitudes[2];\n";
+            snipplet += "        }\n";
+            snipplet += "        if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
+            snipplet += "            p += getPixel( amplitudes[2], texture, vec2( s1m, t1p ), sPixId );\n";
+            snipplet += "            q += amplitudes[2];\n";
+            snipplet += "        }\n";
+            snipplet += "        if (viewId.s > 1.0) { \n";
+            snipplet += "            p += getPixel( amplitudes[3], texture, vec2( s2m, viewId.t ), sPixId );\n";
+            snipplet += "            q += amplitudes[3];\n";
+            snipplet += "            if (viewId.t > 0.0) { \n";
+            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s2m, t1m ), sPixId );\n";
+            snipplet += "                q += amplitudes[4];\n";
+            snipplet += "                if (viewId.t > 1.0) { \n";
+            snipplet += "                    p += getPixel( amplitudes[5], texture, vec2( s2m, t2m ), sPixId );\n";
+            snipplet += "                    q += amplitudes[5];\n";
+            snipplet += "                }\n";
+            snipplet += "            }\n";
+            snipplet += "            if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
+            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s2m, t1p ), sPixId );\n";
+            snipplet += "                q += amplitudes[4];\n";
+            snipplet += "                if (viewId.t < " + B2Y.toFixed(2) + ") { \n";
+            snipplet += "                    p += getPixel( amplitudes[5], texture, vec2( s2m, t2p ), sPixId );\n";
+            snipplet += "                    q += amplitudes[5];\n";
+            snipplet += "                }\n";
+            snipplet += "            }\n";
+            snipplet += "        }\n";
+            snipplet += "    }\n";
+            snipplet += "    if (viewId.t > 0.0) { \n";
+            snipplet += "        p += getPixel( amplitudes[1], texture, vec2( viewId.s, t1m ), sPixId );\n";
+            snipplet += "        q += amplitudes[1];\n";
+            snipplet += "        if (viewId.t > 1.0) { \n";
+            snipplet += "            p += getPixel( amplitudes[3], texture, vec2( viewId.s, t2m ), sPixId );\n";
+            snipplet += "            q += amplitudes[3];\n";
+            snipplet += "            if (viewId.s > 0.0) { \n";
+            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s1m, t2m ), sPixId );\n";
+            snipplet += "                q += amplitudes[4];\n";
+            snipplet += "            }\n";
+            snipplet += "            if (viewId.s < " + B1X.toFixed(1) + ") { \n";
+            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s1p, t2m ), sPixId );\n";
+            snipplet += "                q += amplitudes[4];\n";
+            snipplet += "            }\n";
+            snipplet += "        }\n";
+            snipplet += "    }\n";
+            snipplet += "    if (viewId.s < " + B1X.toFixed(1) + ") { \n";
+            snipplet += "        p += getPixel( amplitudes[1], texture, vec2( s1p, viewId.t ), sPixId );\n";
+            snipplet += "        q += amplitudes[1];\n";
+            snipplet += "        if (viewId.t > 0.0) { \n";
+            snipplet += "            p += getPixel( amplitudes[2], texture, vec2( s1p, t1m ), sPixId );\n";
+            snipplet += "            q += amplitudes[2];\n";
+            snipplet += "        }\n";
+            snipplet += "        if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
+            snipplet += "            p += getPixel( amplitudes[2], texture, vec2( s1p, t1p ), sPixId );\n";
+            snipplet += "            q += amplitudes[2];\n";
+            snipplet += "        }\n";
+            snipplet += "        if (viewId.s < " + B2X.toFixed(1) + ") { \n";
+            snipplet += "            p += getPixel( amplitudes[3], texture, vec2( s2p, viewId.t ), sPixId );\n";
+            snipplet += "            q += amplitudes[3];\n";
+            snipplet += "            if (viewId.t > 0.0) { \n";
+            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s2p, t1m ), sPixId );\n";
+            snipplet += "                q += amplitudes[4];\n";
+            snipplet += "                if (viewId.t > 1.0) { \n";
+            snipplet += "                    p += getPixel( amplitudes[5], texture, vec2( s2p, t2m ), sPixId );\n";
+            snipplet += "                    q += amplitudes[5];\n";
+            snipplet += "                }\n";
+            snipplet += "            }\n";
+            snipplet += "            if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
+            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s2p, t1p ), sPixId );\n";
+            snipplet += "                q += amplitudes[4];\n";
+            snipplet += "                if (viewId.t < " + B2Y.toFixed(2) + ") { \n";
+            snipplet += "                    p += getPixel( amplitudes[5], texture, vec2( s2p, t2p ), sPixId );\n";
+            snipplet += "                    q += amplitudes[5];\n";
+            snipplet += "                }\n";
+            snipplet += "            }\n";
+            snipplet += "        }\n";
+            snipplet += "    }\n";
+            snipplet += "    if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
+            snipplet += "        p += getPixel( amplitudes[1], texture, vec2( viewId.s, t1p ), sPixId );\n";
+            snipplet += "        q += amplitudes[1];\n";
+            snipplet += "        if (viewId.t < " + B2Y.toFixed(1) + ") { \n";
+            snipplet += "            p += getPixel( amplitudes[3], texture, vec2( viewId.s, t2p ), sPixId );\n";
+            snipplet += "            q += amplitudes[3];\n";
+            snipplet += "            if (viewId.s > 0.0) { \n";
+            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s1m, t2p ), sPixId );\n";
+            snipplet += "                q += amplitudes[4];\n";
+            snipplet += "            }\n";
+            snipplet += "            if (viewId.s < " + B1X.toFixed(1) + ") { \n";
+            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s1p, t2p ), sPixId );\n";
+            snipplet += "                q += amplitudes[4];\n";
+            snipplet += "            }\n";
+            snipplet += "        }\n";
+            snipplet += "    }\n";
+            snipplet += "    p *= (1.0/q);\n";
+            snipplet += "    return(p);\n";
+            snipplet += "}\n";
+            return snipplet;
+        }
+
+        // member func
+        this.useBasicSwizzleShader = function () {
+            this._swizzleRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
+            this._swizzleRenderTarget.generateMipmaps = false;
+                this.matBasic = new THREE.ShaderMaterial({
+                    uniforms: {
+                        "tNormalViews": { type: "t", value: this._swizzleRenderTarget },
+                        "renderSize": { type: "v2", value: new THREE.Vector2(this.width, this.height) }
+                    },
+                    vertexShader: _SwizzleVertexShaderSrc,
+                    fragmentShader: _SwizzleFragmentShaderSrc,
+                    depthWrite: false
+                });
+            this.materialSwizzle = this.matBasic;
+        };
+        this.useSuperSampleSwizzleShader = function () {
+            this._swizzleRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
+            this._swizzleRenderTargetSftX = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
+            this._swizzleRenderTargetSftY = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
+            this._swizzleRenderTargetSftXY = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
+            this._swizzleRenderTarget.generateMipmaps = false; this._swizzleRenderTargetSftX.generateMipmaps = false;
+            this._swizzleRenderTargetSftY.generateMipmaps = false; this._swizzleRenderTargetSftXY.generateMipmaps = false;
+                this.matSuperSample = new THREE.ShaderMaterial({
+                    uniforms: {
+                        "tNormalViews": { type: "t", value: this._swizzleRenderTarget },
+                        "tSuperX": { type: "t", value: this._swizzleRenderTargetSftX },
+                        "tSuperY": { type: "t", value: this._swizzleRenderTargetSftY },
+                        "tSuperD": { type: "t", value: this._swizzleRenderTargetSftXY },
+                        "fader": { type: "f", value: 1.0 },
+                        "renderSize": { type: "v2", value: new THREE.Vector2(this.width, this.height) }
+                    },
+                    vertexShader: _SwizzleVertexShaderSrc,
+                    fragmentShader: _SuperSampleSwizzleFragmentShaderSrc,
+                    depthWrite: false
+                });
+            this.materialSwizzle = this.matSuperSample;
+        };
+        this.useSharpenSwizzleShader = function () {
+            this._swizzleRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
+            this._swizzleRenderTarget.generateMipmaps = false;
+            this.matSharpen = new THREE.ShaderMaterial({
+                uniforms: {
+                    "tNormalViews": { type: "t", value: this._swizzleRenderTarget },
+                    "fader"		: { type: "f", value:1.0},
+                    "invA"		: { type: "fv1", value: invA },
+                    "renderSize": { type: "v2", value: new THREE.Vector2(this.width, this.height) }
+                },
+                vertexShader: _SwizzleVertexShaderSrc,
+                fragmentShader: _SharpenSwizzleFragmentShaderSrc,
+                depthWrite: false
+            });
+            this.materialSwizzle = this.matSharpen;
+        }
+
+        //choose shaders to use
+        switch (_that.nShaderMode) {
+            case 0: this.useBasicSwizzleShader(); break;
+            case 1: this.useSharpenSwizzleShader(); break;
+            case 2: this.useSuperSampleSwizzleShader(); break;
+            default:
+                this.useBasicSwizzleShader();
+        }
+        this.swizzleMesh = new THREE.Mesh(swizzleBackgroundGeometry, this.materialSwizzle);
+        this.LEIA_output.add(this.swizzleMesh);
+
+        this.changeSzie = function (w, h) {
+            this.width = w;
+            this.height = h;
+            this.cameraSWIZZLE = new THREE.OrthographicCamera(this.width / -2, this.width / 2, this.height / 2, this.height / -2, -1, 1);
+            this.cameraSWIZZLE.position.z = 0;
+            if (this.LEIA_output.children.length > 0) this.LEIA_output.remove(this.swizzleMesh);
+            var swizzleBackgroundGeometry = new THREE.PlaneGeometry(this.width, this.height);
+
+            switch (_that.nShaderMode) {
+                case 0: this.useBasicSwizzleShader(); break;
+                case 1: this.useSharpenSwizzleShader(); break;
+                case 2: this.useSuperSampleSwizzleShader(); break;
+                default:
+                    this.useBasicSwizzleShader();
+            }
+            this.swizzleMesh = new THREE.Mesh(swizzleBackgroundGeometry, this.materialSwizzle);
+            this.LEIA_output.add(this.swizzleMesh);
+        };
+
+
+        // call back
+        document.addEventListener('keydown', onDocumentKeyDown, false);
+        function onDocumentKeyDown(event) {
+            var keyCode = event.which;
+            //console.log(keyCode);
+            switch (keyCode) {
+                case 83: // 's'
+                    //_that.bSuperSample = !_that.bSuperSample;
+                    _that.nShaderMode++;
+                    _that.nShaderMode = _that.nShaderMode % 3;
+                    if (_that._shaderManager != undefined) {
+                        switch (_that.nShaderMode) {
+                            case 0: _that._shaderManager.useBasicSwizzleShader(); _that._shaderManager.LEIA_output.children[0].material = _that._shaderManager.matBasic; break;
+                            case 1: _that._shaderManager.useSharpenSwizzleShader(); _that._shaderManager.LEIA_output.children[0].material = _that._shaderManager.matSharpen; break;
+                            case 2: _that._shaderManager.useSuperSampleSwizzleShader(); _that._shaderManager.LEIA_output.children[0].material = _that._shaderManager.matSuperSample; break;
+                            //default:
+                            //    _that._shaderManager.useBasicSwizzleShader(); _that._shaderManager.LEIA_output.children[0].material = _that._shaderManager.matBasic;
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+    // shaders end
+    
+    this.getCameraPosition = function (position, targetPosition, up, npart, xIndex, yIndex, Gradient, EachTarPos, spanMode, shiftX, shiftY) {
         if (position.x == 0 && position.y != 0 && position.z == 0) {
             position.z = position.y / 100;
         }
@@ -942,11 +1231,25 @@ var LeiaWebGLRenderer = function (parameters) {
         mat11 /= len;
         mat12 /= len;
 
-        // add cam here		
-        var curX = xIndex - 3.5;
-        var curY = yIndex - 3.5;
-        var curXAng = curY * scale;
-        var curYAng = curX * scale;
+        // baseline
+        len = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2);
+        var halfRange = Math.tan(THREE.Math.degToRad(3.5 * scale)) * len;
+        var baseLine = halfRange / 3.5;
+
+        // add cam here
+        if (shiftX == undefined)
+            shiftX = 0;
+        if (shiftY == undefined)
+            shiftY = 0;
+        var curX = xIndex - 3.5 + shiftX;
+        var curY = yIndex - 3.5 + shiftY;
+        //var curXAng = curY * scale;
+        //var curYAng = curX * scale;
+        var curXRange = curY * baseLine;
+        var curYRange = curX * baseLine;
+        var curXAng = THREE.Math.radToDeg(Math.atan(curXRange / len) );
+        var curYAng = THREE.Math.radToDeg(Math.atan(curYRange / len) );
+
         len = v0 * v0 + v1 * v1 + v2 * v2;
         var phi = curYAng;
         var alpha = curXAng;
@@ -979,13 +1282,12 @@ var LeiaWebGLRenderer = function (parameters) {
         outPosition.x = w0;
         outPosition.y = w1;
         outPosition.z = w2;
-        var eachTarPos = new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z);
-        eachTarPos.add(outPosition.clone().sub(position));
-        EachTarPos.copy(eachTarPos);
+        var _eachTarPos = new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z);
+        _eachTarPos.add(outPosition.clone().sub(position));
+        EachTarPos.copy(_eachTarPos);
 
         return outPosition;
     }
-
     this.getCameraIntrinsic = function (camera, _tarObj) {
         var _local_lrbt = [];
         for (var i = 0; i < 4; i++) {
@@ -1055,13 +1357,13 @@ var LeiaWebGLRenderer = function (parameters) {
         this.tarObj.scale.y = this.scale;
         this.tarObj.scale.z = this.scale;
         this.tarObj.updateMatrix();
+
         this.update = function () {
             this.position.copy(this.tarObj.position);
             this.scale = this.tarObj.scale.x;
             this.tarObj.rotation.setFromRotationMatrix(camera.matrix);
         }
     }
-
 
     this._holoCamCenter = undefined;
     this.bHoloCamCenterInit = false;
@@ -1160,6 +1462,46 @@ var LeiaWebGLRenderer = function (parameters) {
                         scene.add(mesh);
                     else
                         scene.children[tarId].add(mesh);
+                   
+                    var meshSX = mesh.clone();
+                    var meshPosSX = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0.5, 0);
+                    meshSX.position.x = meshPosSX.x;
+                    meshSX.position.y = meshPosSX.y;
+                    meshSX.position.z = meshPosSX.z;
+                    meshSX.lookAt(EachTarPos);
+                    this.camMeshs64.push(meshSX);
+                    var meshSY = mesh.clone();
+                    var meshPosSY = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0, -0.5);
+                    meshSY.position.x = meshPosSY.x;
+                    meshSY.position.y = meshPosSY.y;
+                    meshSY.position.z = meshPosSY.z;
+                    meshSY.lookAt(EachTarPos);
+                    this.camMeshs64.push(meshSY);
+                    var meshSXY = mesh.clone();
+                    var meshPosSXY = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0.5, -0.5);
+                    meshSXY.position.x = meshPosSXY.x;
+                    meshSXY.position.y = meshPosSXY.y;
+                    meshSXY.position.z = meshPosSXY.z;
+                    meshSXY.lookAt(EachTarPos);
+                    this.camMeshs64.push(meshSXY);
+                    if (bHasCam || tarId == undefined) {
+                        scene.add(meshSX);
+                        scene.add(meshSY);
+                        scene.add(meshSXY);
+                    }
+                    else {
+                        scene.children[tarId].add(meshSX);
+                        scene.children[tarId].add(meshSY);
+                        scene.children[tarId].add(meshSXY);
+                    }
+
+                    if (_that.nShaderMode!=2) {
+                        meshSX.visible = false;
+                        meshSY.visible = false;
+                        meshSXY.visible = false;
+                    }
+
+
                 }
             //============
             //this.ObjMesh2.push(EyeCenter);
@@ -1199,11 +1541,44 @@ var LeiaWebGLRenderer = function (parameters) {
                 for (var j = 0; j < npart; j++) {
                     var Gradient = new THREE.Vector3();
                     var EachTarPos = new THREE.Vector3();
-                    var meshPosition = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode);
-                    this.camMeshs64[i * npart + j].position.x = meshPosition.x;
-                    this.camMeshs64[i * npart + j].position.y = meshPosition.y;
-                    this.camMeshs64[i * npart + j].position.z = meshPosition.z;
-                    this.camMeshs64[i * npart + j].lookAt(EachTarPos);
+                    if (_that.nShaderMode!=2) {
+                        var meshPosition = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode);
+                        this.camMeshs64[(i * npart + j) * 4 + 0].position.x = meshPosition.x;
+                        this.camMeshs64[(i * npart + j) * 4 + 0].position.y = meshPosition.y;
+                        this.camMeshs64[(i * npart + j) * 4 + 0].position.z = meshPosition.z;
+                        this.camMeshs64[(i * npart + j) * 4 + 0].lookAt(EachTarPos);
+                        this.camMeshs64[(i * npart + j) * 4 + 1].visible = false;
+                        this.camMeshs64[(i * npart + j) * 4 + 2].visible = false;
+                        this.camMeshs64[(i * npart + j) * 4 + 3].visible = false;
+                    }else {
+                       // this.camMeshs64[(i * npart + j) * 4 + 0].visible = true;
+                        this.camMeshs64[(i * npart + j) * 4 + 1].visible = true;
+                        this.camMeshs64[(i * npart + j) * 4 + 2].visible = true;
+                        this.camMeshs64[(i * npart + j) * 4 + 3].visible = true;
+                        var meshPosition = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode);
+                        this.camMeshs64[(i * npart + j) * 4 + 0].position.x = meshPosition.x;
+                        this.camMeshs64[(i * npart + j) * 4 + 0].position.y = meshPosition.y;
+                        this.camMeshs64[(i * npart + j) * 4 + 0].position.z = meshPosition.z;
+                        this.camMeshs64[(i * npart + j) * 4 + 0].lookAt(EachTarPos);
+
+                        var meshPosSX = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0.5, 0);
+                        this.camMeshs64[(i * npart + j) * 4 + 1].position.x = meshPosSX.x;
+                        this.camMeshs64[(i * npart + j) * 4 + 1].position.y = meshPosSX.y;
+                        this.camMeshs64[(i * npart + j) * 4 + 1].position.z = meshPosSX.z;
+                        this.camMeshs64[(i * npart + j) * 4 + 1].lookAt(EachTarPos);
+
+                        var meshPosSY = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0, -0.5);
+                        this.camMeshs64[(i * npart + j) * 4 + 2].position.x = meshPosSY.x;
+                        this.camMeshs64[(i * npart + j) * 4 + 2].position.y = meshPosSY.y;
+                        this.camMeshs64[(i * npart + j) * 4 + 2].position.z = meshPosSY.z;
+                        this.camMeshs64[(i * npart + j) * 4 + 2].lookAt(EachTarPos);
+
+                        var meshPosSXY = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0.5, -0.5);
+                        this.camMeshs64[(i * npart + j) * 4 + 3].position.x = meshPosSXY.x;
+                        this.camMeshs64[(i * npart + j) * 4 + 3].position.y = meshPosSXY.y;
+                        this.camMeshs64[(i * npart + j) * 4 + 3].position.z = meshPosSXY.z;
+                        this.camMeshs64[(i * npart + j) * 4 + 3].lookAt(EachTarPos);
+                    }
                 }
             this.LocalControls.enabled = true;
             if (this.tarControls.axis != null || this.camControls.axis != null)
@@ -1223,15 +1598,30 @@ var LeiaWebGLRenderer = function (parameters) {
             if (_that.bGlobalView)
                 _that.render(scene, this.Gcamera, renderTarget, forceClear);
         }
+        var lastBgView, lastBgyro;
+        if (_that.bHidePanels) {
+            lastBgView = _that.bGlobalView;
+            lastBgyro = _that.bGyroSimView;
+        }
         document.addEventListener('keydown', onDocumentKeyDown, false);
         function onDocumentKeyDown(event) {
             var keyCode = event.which;
-            console.log(keyCode);
+            //console.log(keyCode);
             switch (keyCode) {
                 case 27: // escape key
                     //case 32: // ' '
-                case 71: // 'g'
-                    _that.bGlobalView = !_that.bGlobalView;
+                case 71: // 'g'                
+                    _that.bHidePanels = !_that.bHidePanels;
+                    if (_that.bHidePanels) {
+                        lastBgView = _that.bGlobalView;
+                        lastBgyro = _that.bGyroSimView;
+                        _that.bGlobalView = false;
+                        _that.bGyroSimView = false;
+                    }
+                    if (!_that.bHidePanels) {
+                        _that.bGlobalView = lastBgView;
+                        _that.bGyroSimView = lastBgyro;
+                    }
                     break;
                 case 82: // 'r'
                     _that.bRendering = !_that.bRendering;
@@ -1239,6 +1629,7 @@ var LeiaWebGLRenderer = function (parameters) {
             }
         }
     }
+    this.bHidePanels = false;
     // Gyro simulation
     this.bGyroSimViewInit = false;
     var _gyroView;
@@ -1284,13 +1675,17 @@ var LeiaWebGLRenderer = function (parameters) {
     }
         
     // rendering
-    var Leia_compute_renderViews = function (scene, camera, renderTarget, forceClear) {
+    var Leia_compute_renderViews = function (scene, camera, renderTarget, forceClear, shiftX, shiftY) {
         var spanMode = _that.spanSphereMode;
         var camPositionCenter = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
         var tmpM = new THREE.Matrix4();
         var tmpV = new THREE.Vector3(camPositionCenter.x - camera.targetPosition.x, camPositionCenter.y - camera.targetPosition.y, camPositionCenter.z - camera.targetPosition.z);
         var npart = 8;
         var _d = 0;
+        if (shiftX == undefined)
+            shiftX = 0;
+        if (shiftY == undefined)
+            shiftY = 0;
         for (var ii = 0; ii < npart; ii++)
             for (var jj = 0; jj < npart; jj++) {
                 _that.setViewport(_canvas.width / npart * ii, _canvas.height / npart * jj, _canvas.width / npart, _canvas.height / npart);// debug shadow, modify _viewport*** here
@@ -1298,7 +1693,7 @@ var LeiaWebGLRenderer = function (parameters) {
                 _that.enableScissorTest(true);
                 var Gradient = new THREE.Vector3();
                 var EachTarPos = new THREE.Vector3();
-                var camPosition = _that.getCameraPosition(camPositionCenter, camera.targetPosition, camera.up, npart, ii, jj, Gradient, EachTarPos, spanMode);
+                var camPosition = _that.getCameraPosition(camPositionCenter, camera.targetPosition, camera.up, npart, ii, jj, Gradient, EachTarPos, spanMode, shiftX, shiftY);
                 camera.position.x = camPosition.x;
                 camera.position.y = camPosition.y;
                 camera.position.z = camPosition.z;
@@ -1308,7 +1703,8 @@ var LeiaWebGLRenderer = function (parameters) {
                 if (_that._holoScreen.tarObj.geometry.vertices[0] !== undefined) {
                     _d = _that.getCameraIntrinsic(camera, _that._holoScreen.tarObj);
                 }
-                if (renderTarget == _swizzleRenderTarget) {
+                //if (renderTarget == _swizzleRenderTarget || renderTarget == _swizzleRenderTargetSftX || renderTarget == _swizzleRenderTargetSftY || renderTarget == _swizzleRenderTargetSftXY) {
+                if (renderTarget !== undefined) {
                     renderTarget.sx = _canvas.width / npart * ii;
                     renderTarget.sy = _canvas.height / npart * jj;
                     renderTarget.w = _canvas.width / npart;
@@ -1344,6 +1740,10 @@ var LeiaWebGLRenderer = function (parameters) {
                 this._holoScreen = new CHoloScreen(camera, _holoScreenScale);
                 this.bHoloScreenInit = true;
             }
+            if (!this.bShaderManInit) {
+                this._shaderManager = new CShaderManager();
+                this.bShaderManInit = true;
+            }
             //this._renderMode = 0;
 
             if (0 == this._renderMode) {
@@ -1366,13 +1766,23 @@ var LeiaWebGLRenderer = function (parameters) {
             } else if (1 == this._renderMode) {
                 console.log("render64");
                 Leia_compute_renderViews(scene, camera, renderTarget, forceClear);
+                if (this.nShaderMode==2) {
+                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.5, 0.0);
+                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.0, -0.5);
+                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.5, -0.5);
+                }
             } else if (2 == this._renderMode) {
-                Leia_compute_renderViews(scene, camera, _swizzleRenderTarget, forceClear);
+                Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTarget, forceClear);
+                if (this.nShaderMode==2) {
+                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftX, forceClear, 0.5, 0.0);
+                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftY, forceClear, 0.0, -0.5);
+                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftXY, forceClear, 0.5, -0.5);
+                }
 
                 this.setViewport(0, 0, _canvas.width, _canvas.height);// debug shadow, modify _viewport*** here
                 this.setScissor(0, 0, _viewportWidth, _viewportHeight);
                 this.enableScissorTest(true);
-                renderer.render(LEIA_output, cameraSWIZZLE);
+                renderer.render(this._shaderManager.LEIA_output, this._shaderManager.cameraSWIZZLE);
             } else {
                 //mode error
                 console.log("renderMode error!");
