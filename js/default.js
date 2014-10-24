@@ -1,1814 +1,2836 @@
-var LeiaCamera = function (fov, aspect, near, far) {
-    THREE.PerspectiveCamera.call(this, fov, aspect, near, far);
-    this.targetPosition = new THREE.Vector3(0, 0, 0);
-}
-LeiaCamera.prototype = Object.create(THREE.PerspectiveCamera.prototype);
-LeiaCamera.prototype.lookAt = function () {
-    var m1 = new THREE.Matrix4();
-    return function (vector) {
-        this.targetPosition = vector;
-        m1.lookAt(this.position, vector, this.up);
-        this.quaternion.setFromRotationMatrix(m1);
-    };
-}();
-LeiaCamera.prototype.clone = function (camera) {
-    if (camera === undefined) camera = new LeiaCamera();
-    THREE.PerspectiveCamera.prototype.clone.call(this, camera);
-    camera.targetPosition.copy(this.targetPosition);
-    return camera;
+//FileStart:default.js 
+var code = worker.toString();
+	code = code.substring(code.indexOf("{")+1, code.lastIndexOf("}"));
+	var blob = new Blob([code], {type: "application/javascript"});
+	var path = URL.createObjectURL(blob);
+	Physijs.scripts.worker = path;
+	Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
+
+	var animate, initScene, render, _boxes = [], spawnBall, gameStep,
+		renderer, scene, ground_material, ground, bottom, light, camera,
+        bumper_x1, bumper_x2, bumper_z1, bumper_z2, ball, ball_radius,
+         bumper_x1_s, bumper_x2_s, bumper_z1_s, bumper_z2_s,
+        yard_x, yard_z, bush, wall_thick, ground_thick,
+        slope_z1, slope_z2, wall_z1, wall_yard_z1, wall_bush, road_width,
+        wall_z2, wall_z3, wall_z4, wall_z5, wall_z6, wall_z7, wall_z8,
+        wall_x1, wall_x2, wall_x3, wall_x4, wall_x5, wall_x6,
+        wall_yard_z2, wall_yard_z3, wall_yard_z4, wall_yard_z5, wall_yard_z6, wall_yard_z7, wall_yard_z8,
+        wall_yard_x1, wall_yard_x2, wall_yard_x3, wall_yard_x4, wall_yard_x5, wall_yard_x6,
+        tar_1, tar_2, tar_3, door_1, door_2, door_yard_1, door_yard_2,
+        tar_size,
+	    tarBox, handleCollision,
+        lastRoll, lastYaw, lastPitch,
+	    camMeshs64 = [],
+        logo_1,
+	    holoScreenScale    ;
+
+	var showWidth =  window.innerWidth;
+	var showHeight = window.innerHeight;
+	var frame = 0;
+	var showGview, Gview, Gcamera;
+	var camHeight = 100;
+	//document.body.onload = function () {
+	    initScene();
+	    animate();
+	//};
+
+	function initScene() {
+	    //renderer = new THREE.WebGLRenderer({ antialias: true });
+	    renderer = new LeiaWebGLRenderer({
+	        antialias: true,
+	        renderMode: _renderMode,
+	        camPanelVisible: _camPanelVisible,
+	        gyroPanelVisible: _gyroPanelVisible,
+	        camFov: _camFov,
+	        devicePixelRatio: 1
+	    }
+       );//
+	    renderer.Leia_setSize(showWidth, showHeight);//2
+		renderer.shadowMapEnabled = true;
+		renderer.shadowMapSoft = true;
+
+		var roll = document.getElementById("roll") ;
+		var pitch = document.getElementById("pitch") ;
+		var yaw = document.getElementById("yaw") ;
+		var x_g = Number(pitch.innerText) * -40;
+		var y_g = Number(roll.innerText) * 40;
+		var z_g = Number(yaw.innerText) * 40;
+		lastRoll = z_g;
+		lastPitch = x_g;
+		//console.log("document.getElementById:", roll);
+		//console.log("y_g:", y_g);
+
+		document.body.appendChild(renderer.domElement);
+		scene = new Physijs.Scene();
+		var GravitySim = -9.8 * 20;
+		scene.setGravity(new THREE.Vector3(0, GravitySim, 0));
+		//scene.addEventListener(	'update', function() {scene.simulate( undefined, 0.001 );});
+		
+	    // Ground
+		yard_x = 60;
+		yard_z = 60;
+		bush = 20;
+		wall_thick = 3;
+		ground_thick = 20;
+		ball_radius = 7;
+		wall_yard_z1 = 96;
+		wall_bush = 16;
+		road_width = 3 * ball_radius;
+		//var material_g = new THREE.MeshBasicMaterial({ color: 0x4BD121 });
+		THREE.ImageUtils.crossOrigin = "anonymous";
+		//ground_material = Physijs.createMaterial(
+		//	new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg'), transparent: true, opacity: 0.5 }),
+        //   //material_g,
+		//	.9, 
+		//	.2 
+	    //);
+	    ground_material = Physijs.createMaterial(
+	    	//new THREE.MeshLambertMaterial({
+	    	//    color: 0xffffff,
+	    	//    shading: THREE.FlatShading,
+	    	//    vertexColors: THREE.VertexColors
+	    	//}),
+            new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/wood.jpg'), transparent: true, opacity: 1.0 }),
+            //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/wood.jpg'), transparent: true, opacity: 1.0 }),
+	       //material_g,
+	    	0.9, 
+	    	0.2 
+	    );
+        //// box ground
+		ground = new Physijs.BoxMesh(
+			new THREE.BoxGeometry(yard_x * 2, ground_thick, yard_z * 2),
+			ground_material,
+            0
+		);
+		ground.receiveShadow = true;
+		scene.add(ground);
+
+	    // plane bottom
+		THREE.ImageUtils.crossOrigin = "anonymous";
+		var bottom_material = Physijs.createMaterial(
+			//new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg'), transparent: true, opacity: 0.8 }),
+            new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    shading: THREE.FlatShading,
+    wireframe: true,
+    transparent: true
+}),
+           //material_g,
+			0.9, 
+			0.2 
+		);
+		bottom = new Physijs.PlaneMesh(
+            new THREE.PlaneGeometry(yard_x * 2, yard_z * 2),
+            bottom_material,
+            0
+                );
+
+		bottom.receiveShadow = false;
+		bottom.visible = false;
+		scene.add(bottom);
+
+	    //Logo
+	    //var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg') }),
+		//var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/leai_logo.png'), transparent: true, opacity: 1.0 });
+		var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/leai_logo.png'), transparent: true, opacity: 1.0 });
+		var logo_geom = new THREE.PlaneGeometry(yard_x * 63 / 30, yard_z * 14 / 30);
+		logo_1 = new THREE.Mesh(logo_geom, logo_mat);
+		logo_1.position.x = 0;//wall_thick / 2;
+		logo_1.position.y = 15;
+		logo_1.position.z = -30; 
+		logo_1.rotation.x = -90;
+		scene.add(logo_1);
+
+
+
+
+
+	    // Bumpers
+		THREE.ImageUtils.crossOrigin = "anonymous";
+		var bumper_material = Physijs.createMaterial(
+         new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/wood.jpg') }),
+   //      new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/wood.jpg') }),
+  //     new THREE.MeshLambertMaterial({ transparent: false, opacity: 0.5 }),
+                    0.4, 
+                    0.8
+                );
+		var bumper_geom_x = new THREE.BoxGeometry(wall_thick, bush, yard_z * 2);
+	    // x1
+		//var material_x1 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x216000  }), .4, .8);
+		bumper_x1 = new Physijs.BoxMesh(bumper_geom_x, bumper_material, 0);
+		bumper_x1.position.y = bush / 2 + ground_thick / 2;
+		bumper_x1.position.x = -yard_x + wall_thick / 2;
+		bumper_x1.receiveShadow = true;
+		scene.add(bumper_x1);
+	    // x2
+		var material_x2 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x000021 }), 0.4, 0.8);
+		bumper_x2 = new Physijs.BoxMesh(bumper_geom_x, bumper_material, 0);
+		bumper_x2.position.y = bush / 2 + ground_thick / 2;
+		bumper_x2.position.x = yard_x - wall_thick / 2;
+		bumper_x2.receiveShadow = true;
+		scene.add(bumper_x2);
+	    // z1
+		var material_z1 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0xFED100 }), 0.4, 0.8);
+		var bumper_geom_z = new THREE.BoxGeometry(yard_z * 2-2.5*wall_thick, bush, wall_thick);
+		bumper_z1 = new Physijs.BoxMesh(bumper_geom_z, bumper_material, 0);
+		bumper_z1.position.y = bush / 2 + ground_thick / 2;
+		bumper_z1.position.z = -yard_x + wall_thick / 2;
+		bumper_z1.receiveShadow = true;
+		scene.add(bumper_z1);
+	    // z2
+		var material_z2 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x4B0021 }), 0.4, 0.8);
+		bumper_z2 = new Physijs.BoxMesh(bumper_geom_z, bumper_material, 0);
+		bumper_z2.position.y = bush / 2 + ground_thick / 2;
+		bumper_z2.position.z = yard_x - wall_thick / 2;
+		bumper_z2.receiveShadow = true;
+		scene.add(bumper_z2);
+
+	    // bumpershadow
+		THREE.ImageUtils.crossOrigin = "anonymous";
+		var bumper_s_material = Physijs.createMaterial(
+  //      new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_6.jpg'), transparent: true, opacity: 0.0 }),
+        new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.2 }),
+                    0.4, 
+                    0.8 
+                );
+        var wall_strongScale =5 ;
+        var bumper_geom_x_s = new THREE.BoxGeometry(wall_thick , bush * wall_strongScale, yard_z * 2);
+	    // x1
+	    //var material_x1 = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x216000  }), .4, .8);
+		bumper_x1_s = new Physijs.BoxMesh(bumper_geom_x_s, bumper_s_material, 0);
+		bumper_x1_s.position.y = bush / 2 + ground_thick / 2;
+		bumper_x1_s.position.x = -yard_x + wall_thick / 2;
+		bumper_x1_s.receiveShadow = true;
+		bumper_x1_s.visible = false;
+		scene.add(bumper_x1_s);
+	    // x2
+		bumper_x2_s = new Physijs.BoxMesh(bumper_geom_x_s, bumper_s_material, 0);
+		bumper_x2_s.position.y = bush / 2 + ground_thick / 2;
+		bumper_x2_s.position.x = yard_x - wall_thick / 2;
+		bumper_x2_s.receiveShadow = true;
+		bumper_x2_s.visible = false;
+		scene.add(bumper_x2_s);
+	    // z1
+		var bumper_geom_z_s = new THREE.BoxGeometry(yard_z * 2 - 2.5 * wall_thick, bush * wall_strongScale, wall_thick );
+		bumper_z1_s = new Physijs.BoxMesh(bumper_geom_z_s, bumper_s_material, 0);
+		bumper_z1_s.position.y = bush / 2 + ground_thick / 2;
+		bumper_z1_s.position.z = -yard_x + wall_thick / 2;
+		bumper_z1_s.receiveShadow = true;
+		bumper_z1_s.visible = false;
+		scene.add(bumper_z1_s);
+	    // z2
+		bumper_z2_s = new Physijs.BoxMesh(bumper_geom_z_s, bumper_s_material, 0);
+		bumper_z2_s.position.y = bush / 2 + ground_thick / 2;
+		bumper_z2_s.position.z = yard_x - wall_thick / 2;
+		bumper_z2_s.receiveShadow = true;
+		bumper_z2_s.visible = false;
+		scene.add(bumper_z2_s);
+
+	    // Slopes
+        // z1
+		var slope_geo = new THREE.BoxGeometry(yard_z * 1, wall_thick, road_width );
+		slope_z1 = new Physijs.BoxMesh(slope_geo, bumper_material, 0);
+		slope_z1.position.x = -yard_x + 2 * road_width;
+		slope_z1.position.y = wall_thick / 2 + ground_thick / 2;
+		slope_z1.position.z = -yard_z + road_width / 2;
+		slope_z1.receiveShadow = true;
+		scene.add(slope_z1);
+
+	    // z2
+		var slope_geo_z2 = new THREE.BoxGeometry(yard_z * 5.6/8, wall_thick, road_width);
+		slope_z2 = new Physijs.BoxMesh(slope_geo_z2, bumper_material, 0);
+		var slope_z2_x = yard_x - yard_x * 4.4 / 12;
+		var slope_z2_y = wall_thick / 2 + ground_thick / 2 + 8;
+		var slope_z2_z = -yard_z + road_width / 2;
+		slope_z2.receiveShadow = true;
+		scene.add(slope_z2);
+
+	    // Walls
+        // z1
+		var wall_geo_z = new THREE.BoxGeometry(wall_yard_z1, wall_bush, wall_thick);
+		wall_z1 = new Physijs.BoxMesh(wall_geo_z, bumper_material, 0);
+		var wall_z1_x = -yard_x + wall_yard_z1 / 2 + road_width;
+		var wall_z1_y = wall_bush / 2 + ground_thick / 2;
+		var wall_z1_z = -yard_z + road_width;
+		wall_z1.receiveShadow = true;
+		scene.add(wall_z1);
+	    // z2
+		wall_yard_z2 = yard_x*2 / 3;
+		var wall_geo_z2 = new THREE.BoxGeometry(wall_yard_z2, wall_bush, wall_thick);
+		wall_z2 = new Physijs.BoxMesh(wall_geo_z2, bumper_material, 0);
+		var wall_z2_x = -yard_x + road_width + wall_yard_z2 / 2;
+		var wall_z2_y = wall_bush / 2 + ground_thick / 2;
+		var wall_z2_z = -yard_z + 2 * road_width + wall_thick / 2;
+        wall_z2.receiveShadow = true;
+        scene.add(wall_z2);
+	    // x1
+        wall_yard_x1 = yard_z - wall_z2_z - road_width*3/4 -4;// tune bottom road
+        var wall_geo_x1 = new THREE.BoxGeometry(wall_thick, wall_bush, wall_yard_x1);
+        wall_x1 = new Physijs.BoxMesh(wall_geo_x1, bumper_material, 0);
+        var wall_x1_x = -yard_x + road_width + wall_thick / 2;
+        var wall_x1_y = wall_bush / 2 + ground_thick / 2;
+        var wall_x1_z = wall_z2_z + wall_thick / 2 + wall_yard_x1 / 2;
+        wall_x1.receiveShadow = true;
+        scene.add(wall_x1);
+	    // x2
+        wall_yard_x2 = wall_yard_x1 / 3;
+        var wall_geo_x2 = new THREE.BoxGeometry(wall_thick, wall_bush, wall_yard_x2);
+        wall_x2 = new Physijs.BoxMesh(wall_geo_x2, bumper_material, 0);
+        var wall_x2_x = wall_z2_x + wall_yard_z2/2+wall_thick/2;
+        var wall_x2_y = wall_bush / 2 + ground_thick / 2;
+        var wall_x2_z = wall_z2_z - wall_thick / 2 +wall_yard_x2 / 2;
+        wall_x2.receiveShadow = true;
+        scene.add(wall_x2);
+	    // z3
+        wall_yard_z3 = yard_x * 1.2 / 4;
+        var wall_geo_z3 = new THREE.BoxGeometry(wall_yard_z3, wall_bush, wall_thick);
+        wall_z3 = new Physijs.BoxMesh(wall_geo_z3, bumper_material, 0);
+        var wall_z3_x = wall_x2_x + wall_yard_z3 / 2 - wall_thick / 2;
+        var wall_z3_y = wall_bush / 2 + ground_thick / 2;
+        var wall_z3_z = wall_x2_z + wall_yard_x2 / 2 + wall_thick / 2;
+        wall_z3.receiveShadow = true;
+        scene.add(wall_z3);
+	    // x3 target
+        wall_yard_x3 = (wall_yard_x1 - wall_yard_x2)/2;
+        var wall_geo_x3 = new THREE.BoxGeometry(wall_thick, wall_bush, wall_yard_x3);
+        wall_x3 = new Physijs.BoxMesh(wall_geo_x3, bumper_material, 0);
+        var wall_x3_x = wall_z3_x + wall_yard_z3/2 - wall_thick/2;
+        var wall_x3_y = wall_bush / 2 + ground_thick / 2;
+        var wall_x3_z = wall_z3_z + wall_yard_x3 / 2 + wall_thick / 2;
+        wall_x3.receiveShadow = true;
+        scene.add(wall_x3);
+	    // z4
+        wall_yard_z4 = wall_yard_z3 + wall_yard_z2*0.9/2;
+        var wall_geo_z4 = new THREE.BoxGeometry(wall_yard_z4, wall_bush, wall_thick);
+        wall_z4 = new Physijs.BoxMesh(wall_geo_z4, bumper_material, 0);
+        var wall_z4_x = wall_x3_x - wall_yard_z4 / 2 - wall_thick / 2;
+        var wall_z4_y = wall_bush / 2 + ground_thick / 2;
+        var wall_z4_z = wall_x3_z + wall_yard_x3 / 2 - wall_thick / 2;
+        wall_z4.receiveShadow = true;
+        scene.add(wall_z4);
+	    // x4
+        wall_yard_x4 = wall_yard_x3;
+        var wall_geo_x4 = new THREE.BoxGeometry(wall_thick, wall_bush, wall_yard_x4);
+        wall_x4 = new Physijs.BoxMesh(wall_geo_x4, bumper_material, 0);
+        var wall_x4_x = wall_z3_x - wall_yard_z4 / 2 + wall_thick / 2;
+        var wall_x4_y = wall_bush / 2 + ground_thick / 2;
+        var wall_x4_z = wall_z3_z + wall_yard_x4 / 2 + wall_thick / 2;
+        wall_x4.receiveShadow = true;
+        scene.add(wall_x4);
+	    // z5
+        wall_yard_z5 = wall_yard_z4 / 2 + wall_x2_x - wall_x4_x;
+        var wall_geo_z5 = new THREE.BoxGeometry(wall_yard_z5, wall_bush, wall_thick);
+        wall_z5 = new Physijs.BoxMesh(wall_geo_z5, bumper_material, 0);
+        var wall_z5_x = wall_x1_x + wall_yard_z5 / 2 + wall_thick / 2;
+        var wall_z5_y = wall_bush / 2 + ground_thick / 2;
+        var wall_z5_z = wall_x1_z + wall_yard_x1 / 2 - wall_thick / 2;
+        wall_z5.receiveShadow = true;
+        scene.add(wall_z5);
+
+        // x5 right part
+        wall_yard_x5 = wall_z2_z - wall_z1_z;
+        var wall_geo_x5 = new THREE.BoxGeometry(wall_thick, wall_bush, wall_yard_x5);
+        wall_x5 = new Physijs.BoxMesh(wall_geo_x5, bumper_material, 0);
+        var wall_x5_x = wall_x3_x;
+        var wall_x5_y = wall_bush / 2 + ground_thick / 2;
+        var wall_x5_z = wall_z1_z + wall_yard_x5 / 2 + wall_thick / 2;
+        wall_x5.receiveShadow = true;
+        scene.add(wall_x5);
+	    // z6
+        wall_yard_z6 = (yard_x - wall_x5_x)/2;
+        var wall_geo_z6 = new THREE.BoxGeometry(wall_yard_z6, wall_bush, wall_thick);
+        wall_z6 = new Physijs.BoxMesh(wall_geo_z6, bumper_material, 0);
+        var wall_z6_x = wall_x5_x + wall_yard_z6 / 2 + wall_thick / 2;
+        var wall_z6_y = wall_bush / 2 + ground_thick / 2;
+        var wall_z6_z = wall_x5_z + wall_yard_x5 / 2 - wall_thick / 2;
+        wall_z6.receiveShadow = true;
+        scene.add(wall_z6);
+	    // x6
+        wall_yard_x6 = wall_yard_x1;
+        var wall_geo_x6 = new THREE.BoxGeometry(wall_thick, wall_bush, wall_yard_x6);
+        wall_x6 = new Physijs.BoxMesh(wall_geo_x6, bumper_material, 0);
+        var wall_x6_x = wall_z6_x + wall_yard_z6 / 2 - wall_thick / 2;
+        var wall_x6_y = wall_bush / 2 + ground_thick / 2;
+        var wall_x6_z = wall_z6_z + wall_yard_x6 / 2 + wall_thick / 2;
+        wall_x6.receiveShadow = true;
+        scene.add(wall_x6);
+	    // z7
+        wall_yard_z7 = wall_yard_z5;
+        var wall_geo_z7 = new THREE.BoxGeometry(wall_yard_z7, wall_bush, wall_thick);
+        wall_z7 = new Physijs.BoxMesh(wall_geo_z7, bumper_material, 0);
+        var wall_z7_x = wall_x6_x - wall_yard_z7 / 2 - wall_thick / 2;
+        var wall_z7_y = wall_bush / 2 + ground_thick / 2;
+        var wall_z7_z = wall_z5_z;
+        wall_z7.receiveShadow = true;
+        scene.add(wall_z7);
+	    // z8
+        wall_yard_z8 = wall_x1_x + yard_x;
+        var wall_geo_z8 = new THREE.BoxGeometry(wall_yard_z8, wall_bush, wall_thick);
+        wall_z8 = new Physijs.BoxMesh(wall_geo_z8, bumper_material, 0);
+        var wall_z8_x = -yard_x + wall_yard_z8 / 2 - wall_thick / 2;
+        var wall_z8_y = wall_bush / 2 + ground_thick / 2;
+        var wall_z8_z = wall_z3_z;
+        wall_z8.receiveShadow = true;
+        scene.add(wall_z8);
+
+	    // tar_1
+        tar_size = 4;
+        var tar_material = Physijs.createMaterial(
+         //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/plywood.jpg') }),
+         new THREE.MeshPhongMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.8, specular: 0xeeeeff, shininess: 20 }),//0x4BD121
+                   .4, 
+                    .8
+                );
+
+        var tar_geo_1 = new THREE.BoxGeometry(tar_size, tar_size, tar_size);
+        tar_1 = new Physijs.BoxMesh(tar_geo_1, tar_material, 0);
+        var tar_1_x = wall_x5_x + wall_thick / 2 + tar_size / 2 +4;
+        var tar_1_y = tar_size / 2 + ground_thick / 2;
+        var tar_1_z = wall_z6_z - wall_thick / 2 - tar_size / 2 -4;
+        tar_1.receiveShadow = true;
+        tar_1.castShadow = true;
+        tar_1.collisions = 0;
+        tar_1.addEventListener('collision', handleCollision);
+        scene.add(tar_1);
+	    // tar_2
+        var tar_material_2 = Physijs.createMaterial(
+         //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/plywood.jpg'), transparent: true, opacity: 0.0 }),
+         new THREE.MeshPhongMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.8, specular: 0xeeeeff, shininess: 20 }),//0x4BD121
+           .4,
+                    .8
+                );
+        //tar_material_2.map.wrapS = tar_material_2.map.wrapT = THREE.RepeatWrapping;
+        //tar_material_2.map.repeat.set(.5, .5);
+        var tar_geo_2 = new THREE.BoxGeometry(tar_size, tar_size, tar_size);
+        tar_2 = new Physijs.BoxMesh(tar_geo_2, tar_material_2, 0);
+        var tar_2_x = wall_x3_x - wall_thick / 2 - tar_size / 2 -1;
+        var tar_2_y = tar_size / 2 + ground_thick / 2;
+        var tar_2_z = wall_x3_z;
+        tar_2.receiveShadow = true;
+        //tar_2.castShadow = true;
+        tar_2.collisions = 0;
+        tar_2.addEventListener('collision', handleCollision2);
+        scene.add(tar_2);
+        // tar_3
+        var tar_material_3 = Physijs.createMaterial(
+        //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/plywood.jpg'), transparent: true, opacity: 0.0 }),
+        new THREE.MeshPhongMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.8, specular: 0xeeeeff, shininess: 20 }),//0x4BD121
+          .4,
+                   .8
+               );
+        var tar_geo_3 = new THREE.BoxGeometry(tar_size, tar_size, tar_size);
+        tar_3 = new Physijs.BoxMesh(tar_geo_3, tar_material_3, 0);
+        var tar_3_x = yard_x - wall_thick / 2 - tar_size / 2 - 1;
+        var tar_3_y = slope_z2_y + tar_size / 2 + wall_thick / 2;
+        var tar_3_z = slope_z2_z;
+        tar_3.receiveShadow = true;
+        //tar_3.castShadow = true;
+        tar_3.collisions = 0;
+	    tar_3.addEventListener('collision', handleCollision3);
+        scene.add(tar_3);
+
+	    // door_1
+        door_yard_1 = (wall_z7_x - wall_yard_z7 / 2) - (wall_z5_x + wall_yard_z5 / 2);
+        var door_geo_1 = new THREE.BoxGeometry(door_yard_1, wall_bush, wall_thick);
+        door_1 = new Physijs.BoxMesh(door_geo_1, bumper_material, 0);
+        var door_1_x = ((wall_z7_x - wall_yard_z7 / 2) + (wall_z5_x + wall_yard_z5 / 2)) / 2;
+        var door_1_y = wall_bush / 2 + ground_thick / 2;
+        var door_1_z = wall_z5_z;
+        door_1.receiveShadow = true;
+        scene.add(door_1);
+	    // door_2
+        door_yard_2 = wall_z1_x - wall_yard_z1 / 2 + yard_x;
+        var door_geo_2 = new THREE.BoxGeometry(door_yard_2, wall_bush, wall_thick);
+        door_2 = new Physijs.BoxMesh(door_geo_2, bumper_material, 0);
+        var door_2_x = (wall_z1_x - wall_yard_z1 / 2 - yard_x) / 2;
+        var door_2_y = wall_bush / 2 + ground_thick / 2;
+        var door_2_z = wall_z1_z;
+        door_2.receiveShadow = true;
+        scene.add(door_2);
+
+        // camera
+        //camera = new THREE.PerspectiveCamera(55, showWidth / showHeight, 1, 1000);
+        camera = new LeiaCamera(55, showWidth / showHeight, 1, 1000);//3
+        camera.position.set(0, camHeight, 2);
+        camera.lookAt(new THREE.Vector3(0, 15, 0));
+        holoScreenScale = 1.2;
+        //camera.lookAt(scene.position);
+		ground.add(camera);
+
+	    // Light
+		light = new THREE.DirectionalLight(0xFFFFFF);
+		light.position.set(-10, 100, 10);
+		light.target.position.copy(scene.position);
+		light.castShadow = true;
+		light.shadowCameraLeft = -60;
+		light.shadowCameraTop = -60;
+		light.shadowCameraRight = 60;
+		light.shadowCameraBottom = 60;
+		light.shadowCameraNear = 20;
+		light.shadowCameraFar = 200;
+		light.shadowBias = -.0001;
+		light.shadowMapWidth = light.shadowMapHeight = 512;
+		light.shadowDarkness = .7;
+		ground.add(light);
+
+
+		var globalP = new THREE.Vector3();
+		globalP.x = yard_x - ball_radius - wall_thick;
+		globalP.y = 20;
+		globalP.z = yard_z - ball_radius - wall_thick;
+
+		var groundMatrix = new THREE.Matrix4();
+		groundMatrix.makeRotationFromEuler(new THREE.Euler(THREE.Math.degToRad(lastRoll), 0, THREE.Math.degToRad(lastPitch)));
+		var gMatInv = new THREE.Matrix4();
+		gMatInv.getInverse(groundMatrix);
+		var localP = new THREE.Vector3();
+		localP = globalP.applyMatrix4(gMatInv);
+		
+		spawnBall(localP.x, localP.y, localP.z);
+
+ 
+	};
+
+	function spawnBall(x,y,z)
+	{
+	    var material;
+        
+        var sphere_geometry = new THREE.SphereGeometry(ball_radius, 32, 32);
+		THREE.ImageUtils.crossOrigin = "anonymous";
+		material = Physijs.createMaterial(
+			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/rocks.jpg') }),
+            //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/rocks.jpg') }),
+            //new THREE.MeshPhongMaterial({ color: 0xaaaaaa, transparent: false, opacity: 0.8, specular: 0xeeeeff, shininess: 20 }),//0x4BD121
+            .6,
+			.9  
+		);
+		//material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
+		//material.map.repeat.set( .5, .5 );
+
+		ball = new Physijs.SphereMesh(
+						sphere_geometry,
+						material,
+						2000,
+						{ restitution: 1.0 }
+					);
+				
+		ball.position.set(x, y, z);
+		ball.castShadow = true;
+		ball.name = "ball";
+		scene.add(ball);
+
+
+	}
+	
+	function handleCollision(collided_with, linearVelocity, angularVelocity) {
+
+	    if (collided_with.id != ball.id)
+	        return;
+	    ++this.collisions;
+	    var forceScale = 0.2;
+	    var collided_with_velo = new THREE.Vector3();
+	    collided_with_velo = collided_with.getLinearVelocity();
+	    var impulseForce = new THREE.Vector3();
+	    impulseForce.x = collided_with_velo.x * 1e6 * forceScale;
+	    impulseForce.y = collided_with_velo.y * 1e6 * forceScale;
+	    impulseForce.z = collided_with_velo.z * 1e6 * forceScale;
+	    switch (this.collisions) {
+
+	        case 1:
+	            this.material.emissive.setHex(0x000000);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+	        case 2:
+	            this.material.color.setHex(0xbb9955);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 3:
+	            this.material.color.setHex(0xaaaa55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 4:
+	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/plywood.jpg');
+	            this.material.color.setHex(0x99bb55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 5:
+	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/grass.png');
+	            this.material.color.setHex(0x88cc55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 6:
+	            
+	            tar_2.material.transparent = true;
+	            tar_2.material.opacity = 1.0;
+	            scene.remove(tar_1);
+	            scene.remove(door_1);
+	            break;	        
+	    }
+	}
+	function handleCollision2(collided_with, linearVelocity, angularVelocity) {
+
+	    if (collided_with.id != ball.id)
+	        return;
+	    ++this.collisions;
+	    var forceScale = 0.2;
+	    var collided_with_velo = new THREE.Vector3();
+	    collided_with_velo = collided_with.getLinearVelocity();
+	    var impulseForce = new THREE.Vector3();
+	    impulseForce.x = collided_with_velo.x * 1e6 * forceScale;
+	    impulseForce.y = collided_with_velo.y * 1e6 * forceScale;
+	    impulseForce.z = collided_with_velo.z * 1e6 * forceScale;
+	    switch (this.collisions) {
+
+	        case 1:
+	            this.material.emissive.setHex(0x000000);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+	        case 2:
+	            this.material.color.setHex(0xbb9955);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 3:
+	            this.material.color.setHex(0xaaaa55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 4:
+	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/plywood.jpg');
+	            this.material.color.setHex(0x99bb55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 5:
+	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/grass.png');
+	            this.material.color.setHex(0x88cc55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 6:
+
+	            tar_3.material.transparent = true;
+	            tar_3.material.opacity = 1.0;
+	            scene.remove(tar_2);
+	            scene.remove(door_2);
+	            break;
+
+
+	    }
+	}
+	function handleCollision3(collided_with, linearVelocity, angularVelocity) {
+
+	    if (collided_with.id != ball.id)
+	        return;
+	    ++this.collisions;
+	    var forceScale = 0.2;
+	    var collided_with_velo = new THREE.Vector3();
+	    collided_with_velo = collided_with.getLinearVelocity();
+	    var impulseForce = new THREE.Vector3();
+	    impulseForce.x = collided_with_velo.x * 1e6 * forceScale;
+	    impulseForce.y = collided_with_velo.y * 1e6 * forceScale;
+	    impulseForce.z = collided_with_velo.z * 1e6 * forceScale;
+	    switch (this.collisions) {
+
+	        case 1:
+	            this.material.emissive.setHex(0x000000);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+	        case 2:
+	            this.material.color.setHex(0xbb9955);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 3:
+	            this.material.color.setHex(0xaaaa55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 4:
+				THREE.ImageUtils.crossOrigin = "anonymous";
+	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/plywood.jpg');
+	            this.material.color.setHex(0x99bb55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 5:
+	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/grass.png');
+	            this.material.color.setHex(0x88cc55);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 6:
+	            //this.material.color.setHex(0x77dd55);
+				THREE.ImageUtils.crossOrigin = "anonymous";
+	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_5.jpg');
+	            this.material.color.setHex(0xffffff);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+
+	        case 7:
+	            //this.material.color.setHex(0x77dd55);
+				THREE.ImageUtils.crossOrigin = "anonymous";
+	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_1.jpg');
+	            //collided_with.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/earth.jpg');
+	            //ground.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_1.jpg');
+	            this.material.color.setHex(0xffffff);
+	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
+	            collided_with.applyCentralImpulse(new THREE.Vector3(-impulseForce.x * 0.0000005, -impulseForce.y * 0.0000005, -impulseForce.z * 0.0000005));
+	            break;
+	        case 8:
+	            //this.material.color.setHex(0x77dd55);
+	            bumper_z1.material.transparent = true;
+	            bumper_z1.material.opacity = 0.0;
+	            bumper_z1_s.material.transparent = true;
+	            bumper_z1_s.material.opacity = 0.0;
+	            //ball.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/earth.jpg');
+	            scene.remove(tar_2);
+	            break;
+	    }
+	}
+		
+	function render() {
+	    var roll = document.getElementById("roll");
+	    var pitch = document.getElementById("pitch");
+	    var yaw = document.getElementById("yaw");
+	    frame++;
+	    var x_g = Number(pitch.innerText) * 35;
+	    var y_g = Number(roll.innerText) * 35;
+	    var z_g = Number(yaw.innerText) * -35;
+	    //console.log("x_g: ", x_g, "y_g: ", y_g, "z_g: ", z_g);
+	    var totalRoll, totalPitch;
+	    if (renderer.GyroSimRoll != undefined)
+	        totalRoll = THREE.Math.degToRad(z_g + renderer.GyroSimRoll);
+	    else
+	        totalRoll = THREE.Math.degToRad(z_g);
+	    if (renderer.GyroSimPitch !== undefined)
+	        totalPitch = THREE.Math.degToRad(x_g + renderer.GyroSimPitch);
+	    else
+	        totalPitch = THREE.Math.degToRad(x_g);
+	    //console.log("totalRoll: ", totalRoll, "totalRoll: ", "totalRoll: ");
+	    renderer.GyroRealRoll = z_g;
+	    renderer.GyroRealPitch = x_g;
+	    renderer.GyroRealYaw = y_g;
+
+// ground
+        // box
+	    ground.matrixAutoUpdate = false;
+	    ground.matrixWorldNeedsUpdate = true;
+	    ground.matrix.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    var quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(totalRoll, 0, totalPitch) );
+        var update = {id: ground._physijs.id};
+	    update.pos = { x: 0, y: 0, z: 0 };
+	    update.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    ground.world.execute('updateTransform', update);
+
+// bottom
+        // plane
+	     bottom.matrixAutoUpdate = false;
+	     bottom.matrixWorldNeedsUpdate = true;
+	    var r1Mat = new THREE.Matrix4();
+	    r1Mat.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    var r2Mat = new THREE.Matrix4();
+	    r2Mat.makeRotationFromEuler(new THREE.Euler(THREE.Math.degToRad(-90), 0, 0));
+	    r1Mat.multiply(r2Mat);
+	    var t1Mat = new THREE.Matrix4();
+	    t1Mat.makeTranslation(0, 0, (ground_thick/2 -1));//+2 can see wood botttom
+        r1Mat.multiply(t1Mat);
+        bottom.matrix = r1Mat;
+        var qqq = new THREE.Quaternion().setFromRotationMatrix(r1Mat);
+        var update_bottom = { id: bottom._physijs.id };
+        var t1Vec = new THREE.Vector3().setFromMatrixPosition(r1Mat);
+        update_bottom.pos = { x: t1Vec.x, y: t1Vec.y, z: t1Vec.z };
+        update_bottom.quat = { x: qqq.x, y: qqq.y, z: qqq.z, w: qqq.w };
+        bottom.world.execute('updateTransform', update_bottom);
+// logo
+        
+        //logo_1.position.y = bush + ground_thick / 2;
+        //logo_1.position.x = 0//wall_thick / 2;
+        //logo_1.rotation.x = -90;
+
+        logo_1.matrixAutoUpdate = false;
+        logo_1.matrixWorldNeedsUpdate = true;
+        var tMatlogo = new THREE.Matrix4();
+        tMatlogo.makeTranslation(0, 16.5, -30);
+        var rMatlogo = new THREE.Matrix4();
+        rMatlogo.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+        rMatlogo.multiply(tMatlogo);
+
+        var rSelflogo = new THREE.Matrix4();
+        rSelflogo.makeRotationFromEuler(new THREE.Euler(THREE.Math.degToRad(-90), 0, 0));
+        rMatlogo.multiply(rSelflogo);
+
+
+        logo_1.matrix = rMatlogo;
+        //var update_bumper = { id: bumper_x1._physijs.id };
+        //var tVec = new THREE.Vector3().setFromMatrixPosition(rMat);
+        //update_bumper.pos = { x: tVec.x, y: tVec.y, z: tVec.z };
+        //update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+        //bumper_x1.world.execute('updateTransform', update_bumper);
+
+// bumper
+        // x1 left
+	    bumper_x1.matrixAutoUpdate = false;
+	    bumper_x1.matrixWorldNeedsUpdate = true;
+	    var tMat = new THREE.Matrix4();
+	    tMat.makeTranslation(-yard_x + wall_thick / 2, bush / 2 + ground_thick / 2, 0);
+	    var rMat = new THREE.Matrix4();
+	    rMat.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat.multiply(tMat);
+	    bumper_x1.matrix = rMat;
+	    var update_bumper = { id: bumper_x1._physijs.id };
+	    var tVec = new THREE.Vector3().setFromMatrixPosition(rMat);
+	    update_bumper.pos = { x: tVec.x, y: tVec.y, z: tVec.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    bumper_x1.world.execute('updateTransform', update_bumper);
+
+	    // x2 right
+	    bumper_x2.matrixAutoUpdate = false;
+	    bumper_x2.matrixWorldNeedsUpdate = true;
+	    var tMat2 = new THREE.Matrix4();
+	    tMat2.makeTranslation(yard_x - wall_thick / 2, bush / 2 + ground_thick / 2, 0);
+	    var rMat2 = new THREE.Matrix4();
+	    rMat2.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat2.multiply(tMat2);
+	    bumper_x2.matrix = rMat2;
+	    update_bumper = { id: bumper_x2._physijs.id };
+	    var tVec2 = new THREE.Vector3().setFromMatrixPosition(rMat2);
+	    update_bumper.pos = { x: tVec2.x, y: tVec2.y, z: tVec2.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    bumper_x2.world.execute('updateTransform', update_bumper);
+
+	    // z1 up
+	    bumper_z1.matrixAutoUpdate = false;
+	    bumper_z1.matrixWorldNeedsUpdate = true;
+	    var tMat3 = new THREE.Matrix4();
+	    tMat3.makeTranslation(0, bush / 2 + ground_thick / 2, -yard_x + wall_thick / 2);
+	    var rMat3 = new THREE.Matrix4();
+	    rMat3.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat3.multiply(tMat3);
+	    bumper_z1.matrix = rMat3;
+	    update_bumper = { id: bumper_z1._physijs.id };
+	    var tVec3 = new THREE.Vector3().setFromMatrixPosition(rMat3);
+	    update_bumper.pos = { x: tVec3.x, y: tVec3.y, z: tVec3.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    bumper_z1.world.execute('updateTransform', update_bumper);
+
+	    // z2 down
+	    bumper_z2.matrixAutoUpdate = false;
+	    bumper_z2.matrixWorldNeedsUpdate = true;
+	    var tMat4 = new THREE.Matrix4();
+	    tMat4.makeTranslation(0, bush / 2 + ground_thick / 2, yard_x - wall_thick / 2);
+	    var rMat4 = new THREE.Matrix4();
+	    rMat4.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat4.multiply(tMat4);
+	    bumper_z2.matrix = rMat4;
+	    update_bumper = { id: bumper_z2._physijs.id };
+	    var tVec4 = new THREE.Vector3().setFromMatrixPosition(rMat4);
+	    update_bumper.pos = { x: tVec4.x, y: tVec4.y, z: tVec4.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    bumper_z2.world.execute('updateTransform', update_bumper);
+
+// bumper_s
+	    // x1 left
+	    bumper_x1_s.matrixAutoUpdate = false;
+	    bumper_x1_s.matrixWorldNeedsUpdate = true;
+	    var tMat_s = new THREE.Matrix4();
+	    tMat_s.makeTranslation(-yard_x - wall_thick / 2, bush / 2 + ground_thick / 2, 0);
+	    var rMat_s = new THREE.Matrix4();
+	    rMat_s.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_s.multiply(tMat_s);
+	    bumper_x1_s.matrix = rMat_s;
+	    var update_bumper_s = { id: bumper_x1_s._physijs.id };
+	    var tVec_s = new THREE.Vector3().setFromMatrixPosition(rMat_s);
+	    update_bumper_s.pos = { x: tVec_s.x, y: tVec_s.y, z: tVec_s.z };
+	    update_bumper_s.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    bumper_x1_s.world.execute('updateTransform', update_bumper_s);
+
+	    // x2 right
+	    bumper_x2_s.matrixAutoUpdate = false;
+	    bumper_x2_s.matrixWorldNeedsUpdate = true;
+	    var tMat2_s = new THREE.Matrix4();
+	    tMat2_s.makeTranslation(yard_x + wall_thick / 2, bush / 2 + ground_thick / 2, 0);
+	    var rMat2_s = new THREE.Matrix4();
+	    rMat2_s.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat2_s.multiply(tMat2_s);
+	    bumper_x2_s.matrix = rMat2_s;
+	    update_bumper_s = { id: bumper_x2_s._physijs.id };
+	    var tVec2_s = new THREE.Vector3().setFromMatrixPosition(rMat2_s);
+	    update_bumper_s.pos = { x: tVec2_s.x, y: tVec2_s.y, z: tVec2_s.z };
+	    update_bumper_s.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    bumper_x2_s.world.execute('updateTransform', update_bumper_s);
+
+	    // z1 up
+	    bumper_z1_s.matrixAutoUpdate = false;
+	    bumper_z1_s.matrixWorldNeedsUpdate = true;
+	    var tMat3_s = new THREE.Matrix4();
+	    tMat3_s.makeTranslation(0, bush / 2 + ground_thick / 2, -yard_x - wall_thick / 2);
+	    var rMat3_s = new THREE.Matrix4();
+	    rMat3_s.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat3_s.multiply(tMat3_s);
+	    bumper_z1_s.matrix = rMat3_s;
+	    update_bumper_s = { id: bumper_z1_s._physijs.id };
+	    var tVec3_s = new THREE.Vector3().setFromMatrixPosition(rMat3_s);
+	    update_bumper_s.pos = { x: tVec3_s.x, y: tVec3_s.y, z: tVec3_s.z };
+	    update_bumper_s.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    bumper_z1_s.world.execute('updateTransform', update_bumper_s);
+
+	    // z2 down
+	    bumper_z2_s.matrixAutoUpdate = false;
+	    bumper_z2_s.matrixWorldNeedsUpdate = true;
+	    var tMat4_s = new THREE.Matrix4();
+	    tMat4_s.makeTranslation(0, bush / 2 + ground_thick / 2, yard_x + wall_thick / 2);
+	    var rMat4_s = new THREE.Matrix4();
+	    rMat4_s.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat4_s.multiply(tMat4_s);
+	    bumper_z2_s.matrix = rMat4_s;
+	    update_bumper_s = { id: bumper_z2_s._physijs.id };
+	    var tVec4_s = new THREE.Vector3().setFromMatrixPosition(rMat4_s);
+	    update_bumper_s.pos = { x: tVec4_s.x, y: tVec4_s.y, z: tVec4_s.z };
+	    update_bumper_s.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    bumper_z2_s.world.execute('updateTransform', update_bumper_s);
+
+	    // slope_z1
+	    slope_z1.matrixAutoUpdate = false;
+	    slope_z1.matrixWorldNeedsUpdate = true;
+	    var tMat_slopez1 = new THREE.Matrix4();
+	    tMat_slopez1.makeTranslation(-yard_x + 2 * road_width, wall_thick / 2 + ground_thick / 2, -yard_z + road_width/2);
+	    var rMat_slopez1 = new THREE.Matrix4();
+	    rMat_slopez1.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_slopez1.multiply(tMat_slopez1);
+	    var rSelf = new THREE.Matrix4();
+	    rSelf.makeRotationFromEuler(new THREE.Euler(0, 0, THREE.Math.degToRad(15)));
+	    rMat_slopez1.multiply(rSelf);
+	    slope_z1.matrix = rMat_slopez1;
+	    var update_slopez1 = { id: slope_z1._physijs.id };
+	    var tVec_slopez1 = new THREE.Vector3().setFromMatrixPosition(rMat_slopez1);
+	    update_slopez1.pos = { x: tVec_slopez1.x, y: tVec_slopez1.y, z: tVec_slopez1.z };
+	    var quaternion_slope = new THREE.Quaternion().setFromRotationMatrix(rMat_slopez1);
+	    update_slopez1.quat = { x: quaternion_slope.x, y: quaternion_slope.y, z: quaternion_slope.z, w: quaternion_slope.w };
+	    slope_z1.world.execute('updateTransform', update_slopez1);
+
+	    // slope_z2
+	    //slope_z2.setCcdMotionThreshold(4);
+	    //slope_z2.setCcdSweptSphereRadius(1);
+	    var slope_z2_x = yard_x - yard_x * 4.4 / 12;
+	    var slope_z2_y = wall_thick / 2 + ground_thick / 2 + 8;
+	    var slope_z2_z = -yard_z + road_width / 2;
+	    slope_z2.matrixAutoUpdate = false;
+	    slope_z2.matrixWorldNeedsUpdate = true;
+	    var tMat_slopez2 = new THREE.Matrix4();
+	    tMat_slopez2.makeTranslation(slope_z2_x, slope_z2_y, slope_z2_z);
+	    var rMat_slopez2 = new THREE.Matrix4();
+	    rMat_slopez2.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_slopez2.multiply(tMat_slopez2);
+	    var rSelfz2 = new THREE.Matrix4();
+	    rSelfz2.makeRotationFromEuler(new THREE.Euler(0, 0, THREE.Math.degToRad(0)));
+	    rMat_slopez2.multiply(rSelfz2);
+	    slope_z2.matrix = rMat_slopez2;
+	    var update_slopez2 = { id: slope_z2._physijs.id };
+	    var tVec_slopez2 = new THREE.Vector3().setFromMatrixPosition(rMat_slopez2);
+	    update_slopez2.pos = { x: tVec_slopez2.x, y: tVec_slopez2.y, z: tVec_slopez2.z };
+	    var quaternion_slope_z2 = new THREE.Quaternion().setFromRotationMatrix(rMat_slopez2);
+	    update_slopez2.quat = { x: quaternion_slope_z2.x, y: quaternion_slope_z2.y, z: quaternion_slope_z2.z, w: quaternion_slope_z2.w };
+	    slope_z2.world.execute('updateTransform', update_slopez2);
+
+	    // wall_z1
+	    var wall_z1_x = -yard_x + wall_yard_z1 / 2 + road_width;
+	    var wall_z1_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_z1_z = -yard_z + road_width;
+	    wall_z1.matrixAutoUpdate = false;
+	    wall_z1.matrixWorldNeedsUpdate = true;
+	    var tMat_wallz1 = new THREE.Matrix4();
+	    tMat_wallz1.makeTranslation(wall_z1_x, wall_z1_y, wall_z1_z);
+	    var rMat_wallz1 = new THREE.Matrix4();
+	    rMat_wallz1.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallz1.multiply(tMat_wallz1);
+	    wall_z1.matrix = rMat_wallz1;
+	    update_bumper = { id: wall_z1._physijs.id };
+	    var tVec_wallz1 = new THREE.Vector3().setFromMatrixPosition(rMat_wallz1);
+	    update_bumper.pos = { x: tVec_wallz1.x, y: tVec_wallz1.y, z: tVec_wallz1.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_z1.world.execute('updateTransform', update_bumper);
+	    // wall_z2
+	    var wall_z2_x = -yard_x + road_width + wall_yard_z2 / 2;
+	    var wall_z2_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_z2_z = -yard_z + 2 * road_width + wall_thick / 2;
+	    wall_z2.matrixAutoUpdate = false;
+	    wall_z2.matrixWorldNeedsUpdate = true;
+	    var tMat_wallz2 = new THREE.Matrix4();
+	    tMat_wallz2.makeTranslation(wall_z2_x, wall_z2_y, wall_z2_z);
+	    var rMat_wallz2 = new THREE.Matrix4();
+	    rMat_wallz2.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallz2.multiply(tMat_wallz2);
+	    wall_z2.matrix = rMat_wallz2;
+	    update_bumper = { id: wall_z2._physijs.id };
+	    var tVec_wallz2 = new THREE.Vector3().setFromMatrixPosition(rMat_wallz2);
+	    update_bumper.pos = { x: tVec_wallz2.x, y: tVec_wallz2.y, z: tVec_wallz2.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_z2.world.execute('updateTransform', update_bumper);
+	    // wall_x1
+	    var wall_x1_x = -yard_x + road_width + wall_thick / 2;
+	    var wall_x1_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_x1_z = wall_z2_z + wall_thick / 2 + wall_yard_x1/2;
+	    wall_x1.matrixAutoUpdate = false;
+	    wall_x1.matrixWorldNeedsUpdate = true;
+	    var tMat_wallx1 = new THREE.Matrix4();
+	    tMat_wallx1.makeTranslation(wall_x1_x, wall_x1_y, wall_x1_z);
+	    var rMat_wallx1 = new THREE.Matrix4();
+	    rMat_wallx1.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallx1.multiply(tMat_wallx1);
+	    wall_x1.matrix = rMat_wallx1;
+	    update_bumper = { id: wall_x1._physijs.id };
+	    var tVec_wallx1= new THREE.Vector3().setFromMatrixPosition(rMat_wallx1);
+	    update_bumper.pos = { x: tVec_wallx1.x, y: tVec_wallx1.y, z: tVec_wallx1.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_x1.world.execute('updateTransform', update_bumper);
+	    // wall_x2
+	    var wall_x2_x = wall_z2_x + wall_yard_z2 / 2 + wall_thick / 2;
+	    var wall_x2_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_x2_z = wall_z2_z - wall_thick / 2 + wall_yard_x2 / 2;
+	    wall_x2.matrixAutoUpdate = false;
+	    wall_x2.matrixWorldNeedsUpdate = true;
+	    var tMat_wallx2 = new THREE.Matrix4();
+	    tMat_wallx2.makeTranslation(wall_x2_x, wall_x2_y, wall_x2_z);
+	    var rMat_wallx2 = new THREE.Matrix4();
+	    rMat_wallx2.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallx2.multiply(tMat_wallx2);
+	    wall_x2.matrix = rMat_wallx2;
+	    update_bumper = { id: wall_x2._physijs.id };
+	    var tVec_wallx2 = new THREE.Vector3().setFromMatrixPosition(rMat_wallx2);
+	    update_bumper.pos = { x: tVec_wallx2.x, y: tVec_wallx2.y, z: tVec_wallx2.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_x2.world.execute('updateTransform', update_bumper);
+	    // wall_z3
+	    var wall_z3_x = wall_x2_x + wall_yard_z3 / 2 - wall_thick / 2;
+	    var wall_z3_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_z3_z = wall_x2_z + wall_yard_x2 / 2 + wall_thick/2;
+	    wall_z3.matrixAutoUpdate = false;
+	    wall_z3.matrixWorldNeedsUpdate = true;
+	    var tMat_wallz3 = new THREE.Matrix4();
+	    tMat_wallz3.makeTranslation(wall_z3_x, wall_z3_y, wall_z3_z);
+	    var rMat_wallz3 = new THREE.Matrix4();
+	    rMat_wallz3.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallz3.multiply(tMat_wallz3);
+	    wall_z3.matrix = rMat_wallz3;
+	    update_bumper = { id: wall_z3._physijs.id };
+	    var tVec_wallz3 = new THREE.Vector3().setFromMatrixPosition(rMat_wallz3);
+	    update_bumper.pos = { x: tVec_wallz3.x, y: tVec_wallz3.y, z: tVec_wallz3.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_z3.world.execute('updateTransform', update_bumper);
+	    // wall_x3
+	    var wall_x3_x = wall_z3_x + wall_yard_z3 / 2 - wall_thick / 2;
+	    var wall_x3_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_x3_z = wall_z3_z + wall_yard_x3 / 2 + wall_thick / 2;
+	    wall_x3.matrixAutoUpdate = false;
+	    wall_x3.matrixWorldNeedsUpdate = true;
+	    var tMat_wallx3 = new THREE.Matrix4();
+	    tMat_wallx3.makeTranslation(wall_x3_x, wall_x3_y, wall_x3_z);
+	    var rMat_wallx3 = new THREE.Matrix4();
+	    rMat_wallx3.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallx3.multiply(tMat_wallx3);
+	    wall_x3.matrix = rMat_wallx3;
+	    update_bumper = { id: wall_x3._physijs.id };
+	    var tVec_wallx3 = new THREE.Vector3().setFromMatrixPosition(rMat_wallx3);
+	    update_bumper.pos = { x: tVec_wallx3.x, y: tVec_wallx3.y, z: tVec_wallx3.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_x3.world.execute('updateTransform', update_bumper);
+	    // wall_z4
+	    var wall_z4_x = wall_x3_x - wall_yard_z4 / 2 - wall_thick / 2;
+	    var wall_z4_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_z4_z = wall_x3_z + wall_yard_x3 / 2 - wall_thick / 2;
+	    wall_z4.matrixAutoUpdate = false;
+	    wall_z4.matrixWorldNeedsUpdate = true;
+	    var tMat_wallz4 = new THREE.Matrix4();
+	    tMat_wallz4.makeTranslation(wall_z4_x, wall_z4_y, wall_z4_z);
+	    var rMat_wallz4 = new THREE.Matrix4();
+	    rMat_wallz4.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallz4.multiply(tMat_wallz4);
+	    wall_z4.matrix = rMat_wallz4;
+	    update_bumper = { id: wall_z4._physijs.id };
+	    var tVec_wallz4 = new THREE.Vector3().setFromMatrixPosition(rMat_wallz4);
+	    update_bumper.pos = { x: tVec_wallz4.x, y: tVec_wallz4.y, z: tVec_wallz4.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_z4.world.execute('updateTransform', update_bumper);
+	    // wall_x4
+	    var wall_x4_x = wall_z4_x - wall_yard_z4 / 2 + wall_thick / 2;
+	    var wall_x4_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_x4_z = wall_z3_z + wall_yard_x4 / 2 + wall_thick / 2;
+	    wall_x4.matrixAutoUpdate = false;
+	    wall_x4.matrixWorldNeedsUpdate = true;
+	    var tMat_wallx4 = new THREE.Matrix4();
+	    tMat_wallx4.makeTranslation(wall_x4_x, wall_x4_y, wall_x4_z);
+	    var rMat_wallx4 = new THREE.Matrix4();
+	    rMat_wallx4.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallx4.multiply(tMat_wallx4);
+	    wall_x4.matrix = rMat_wallx4;
+	    update_bumper = { id: wall_x4._physijs.id };
+	    var tVec_wallx4 = new THREE.Vector3().setFromMatrixPosition(rMat_wallx4);
+	    update_bumper.pos = { x: tVec_wallx4.x, y: tVec_wallx4.y, z: tVec_wallx4.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_x4.world.execute('updateTransform', update_bumper);
+	    // wall_z5
+	    var wall_z5_x = wall_x1_x + wall_yard_z5 / 2 + wall_thick / 2;
+	    var wall_z5_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_z5_z = wall_x1_z + wall_yard_x1 / 2 - wall_thick / 2;
+	    wall_z5.matrixAutoUpdate = false;
+	    wall_z5.matrixWorldNeedsUpdate = true;
+	    var tMat_wallz5 = new THREE.Matrix4();
+	    tMat_wallz5.makeTranslation(wall_z5_x, wall_z5_y, wall_z5_z);
+	    var rMat_wallz5 = new THREE.Matrix4();
+	    rMat_wallz5.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallz5.multiply(tMat_wallz5);
+	    wall_z5.matrix = rMat_wallz5;
+	    update_bumper = { id: wall_z5._physijs.id };
+	    var tVec_wallz5 = new THREE.Vector3().setFromMatrixPosition(rMat_wallz5);
+	    update_bumper.pos = { x: tVec_wallz5.x, y: tVec_wallz5.y, z: tVec_wallz5.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_z5.world.execute('updateTransform', update_bumper);
+	    // wall_x5
+	    var wall_x5_x = wall_x3_x+2;
+	    var wall_x5_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_x5_z = wall_z1_z + wall_yard_x5 / 2 + wall_thick / 2;
+	    wall_x5.matrixAutoUpdate = false;
+	    wall_x5.matrixWorldNeedsUpdate = true;
+	    var tMat_wallx5 = new THREE.Matrix4();
+	    tMat_wallx5.makeTranslation(wall_x5_x, wall_x5_y, wall_x5_z);
+	    var rMat_wallx5 = new THREE.Matrix4();
+	    rMat_wallx5.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallx5.multiply(tMat_wallx5);
+	    wall_x5.matrix = rMat_wallx5;
+	    update_bumper = { id: wall_x5._physijs.id };
+	    var tVec_wallx5 = new THREE.Vector3().setFromMatrixPosition(rMat_wallx5);
+	    update_bumper.pos = { x: tVec_wallx5.x, y: tVec_wallx5.y, z: tVec_wallx5.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_x5.world.execute('updateTransform', update_bumper);
+	    // wall_z6
+	    var wall_z6_x = wall_x5_x + wall_yard_z6 / 2 + wall_thick / 2;
+	    var wall_z6_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_z6_z = wall_x5_z + wall_yard_x5 / 2 - wall_thick / 2;
+	    wall_z6.matrixAutoUpdate = false;
+	    wall_z6.matrixWorldNeedsUpdate = true;
+	    var tMat_wallz6 = new THREE.Matrix4();
+	    tMat_wallz6.makeTranslation(wall_z6_x, wall_z6_y, wall_z6_z);
+	    var rMat_wallz6 = new THREE.Matrix4();
+	    rMat_wallz6.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallz6.multiply(tMat_wallz6);
+	    wall_z6.matrix = rMat_wallz6;
+	    update_bumper = { id: wall_z6._physijs.id };
+	    var tVec_wallz6 = new THREE.Vector3().setFromMatrixPosition(rMat_wallz6);
+	    update_bumper.pos = { x: tVec_wallz6.x, y: tVec_wallz6.y, z: tVec_wallz6.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_z6.world.execute('updateTransform', update_bumper);
+	    // wall_x6
+	    var wall_x6_x = wall_z6_x + wall_yard_z6 / 2 - wall_thick / 2;
+	    var wall_x6_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_x6_z = wall_z6_z + wall_yard_x6 / 2 + wall_thick / 2;
+	    wall_x6.matrixAutoUpdate = false;
+	    wall_x6.matrixWorldNeedsUpdate = true;
+	    var tMat_wallx6 = new THREE.Matrix4();
+	    tMat_wallx6.makeTranslation(wall_x6_x, wall_x6_y, wall_x6_z);
+	    var rMat_wallx6 = new THREE.Matrix4();
+	    rMat_wallx6.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallx6.multiply(tMat_wallx6);
+	    wall_x6.matrix = rMat_wallx6;
+	    update_bumper = { id: wall_x6._physijs.id };
+	    var tVec_wallx6 = new THREE.Vector3().setFromMatrixPosition(rMat_wallx6);
+	    update_bumper.pos = { x: tVec_wallx6.x, y: tVec_wallx6.y, z: tVec_wallx6.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_x6.world.execute('updateTransform', update_bumper);
+	    // wall_z7
+	    var wall_z7_x = wall_x6_x - wall_yard_z7 / 2 - wall_thick / 2;
+	    var wall_z7_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_z7_z = wall_z5_z;
+	    wall_z7.matrixAutoUpdate = false;
+	    wall_z7.matrixWorldNeedsUpdate = true;
+	    var tMat_wallz7 = new THREE.Matrix4();
+	    tMat_wallz7.makeTranslation(wall_z7_x, wall_z7_y, wall_z7_z);
+	    var rMat_wallz7 = new THREE.Matrix4();
+	    rMat_wallz7.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallz7.multiply(tMat_wallz7);
+	    wall_z7.matrix = rMat_wallz7;
+	    update_bumper = { id: wall_z7._physijs.id };
+	    var tVec_wallz7 = new THREE.Vector3().setFromMatrixPosition(rMat_wallz7);
+	    update_bumper.pos = { x: tVec_wallz7.x, y: tVec_wallz7.y, z: tVec_wallz7.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_z7.world.execute('updateTransform', update_bumper);
+	    // wall_z8
+	    var wall_z8_x = -yard_x + wall_yard_z8 / 2 - wall_thick / 2;
+	    var wall_z8_y = wall_bush / 2 + ground_thick / 2;
+	    var wall_z8_z = wall_z3_z;
+	    wall_z8.matrixAutoUpdate = false;
+	    wall_z8.matrixWorldNeedsUpdate = true;
+	    var tMat_wallz8 = new THREE.Matrix4();
+	    tMat_wallz8.makeTranslation(wall_z8_x, wall_z8_y, wall_z8_z);
+	    var rMat_wallz8 = new THREE.Matrix4();
+	    rMat_wallz8.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_wallz8.multiply(tMat_wallz8);
+	    wall_z8.matrix = rMat_wallz8;
+	    update_bumper = { id: wall_z8._physijs.id };
+	    var tVec_wallz8 = new THREE.Vector3().setFromMatrixPosition(rMat_wallz8);
+	    update_bumper.pos = { x: tVec_wallz8.x, y: tVec_wallz8.y, z: tVec_wallz8.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    wall_z8.world.execute('updateTransform', update_bumper);
+
+	    // tar_1
+	    var tar_1_x = wall_x5_x + wall_thick / 2 + tar_size / 2 + 4;
+	    var tar_1_y = tar_size / 2 + ground_thick / 2;
+	    var tar_1_z = wall_z6_z - wall_thick / 2 - tar_size / 2 - 4;
+	    tar_1.matrixAutoUpdate = false;
+	    tar_1.matrixWorldNeedsUpdate = true;
+	    var tMat_tar_1 = new THREE.Matrix4();
+	    tMat_tar_1.makeTranslation(tar_1_x, tar_1_y, tar_1_z);
+	    var rMat_tar_1 = new THREE.Matrix4();
+	    rMat_tar_1.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_tar_1.multiply(tMat_tar_1);
+	    tar_1.matrix = rMat_tar_1;
+	    update_bumper = { id: tar_1._physijs.id };
+	    var tVec_tar_1 = new THREE.Vector3().setFromMatrixPosition(rMat_tar_1);
+	    update_bumper.pos = { x: tVec_tar_1.x, y: tVec_tar_1.y, z: tVec_tar_1.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    tar_1.world.execute('updateTransform', update_bumper);
+	    //tar_2
+	    var tar_2_x = wall_x3_x - wall_thick / 2 - tar_size / 2 - 1;
+	    var tar_2_y = tar_size / 2 + ground_thick / 2;
+	    var tar_2_z = wall_x3_z;
+	    tar_2.matrixAutoUpdate = false;
+	    tar_2.matrixWorldNeedsUpdate = true;
+	    var tMat_tar_2 = new THREE.Matrix4();
+	    tMat_tar_2.makeTranslation(tar_2_x, tar_2_y, tar_2_z);
+	    var rMat_tar_2 = new THREE.Matrix4();
+	    rMat_tar_2.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_tar_2.multiply(tMat_tar_2);
+	    tar_2.matrix = rMat_tar_2;
+	    update_bumper = { id: tar_2._physijs.id };
+	    var tVec_tar_2 = new THREE.Vector3().setFromMatrixPosition(rMat_tar_2);
+	    update_bumper.pos = { x: tVec_tar_2.x, y: tVec_tar_2.y, z: tVec_tar_2.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    tar_2.world.execute('updateTransform', update_bumper);
+	    //tar_3
+	    var tar_3_x = yard_x - wall_thick / 2 - tar_size / 2 - 1;
+	    var tar_3_y = slope_z2_y + tar_size / 2 + wall_thick / 2;
+	    var tar_3_z = slope_z2_z;
+	    tar_3.matrixAutoUpdate = false;
+	    tar_3.matrixWorldNeedsUpdate = true;
+	    var tMat_tar_3 = new THREE.Matrix4();
+	    tMat_tar_3.makeTranslation(tar_3_x, tar_3_y, tar_3_z);
+	    var rMat_tar_3 = new THREE.Matrix4();
+	    rMat_tar_3.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_tar_3.multiply(tMat_tar_3);
+	    tar_3.matrix = rMat_tar_3;
+	    update_bumper = { id: tar_3._physijs.id };
+	    var tVec_tar_3 = new THREE.Vector3().setFromMatrixPosition(rMat_tar_3);
+	    update_bumper.pos = { x: tVec_tar_3.x, y: tVec_tar_3.y, z: tVec_tar_3.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    tar_3.world.execute('updateTransform', update_bumper);
+
+	    // door_1
+	    var door_1_x = ((wall_z7_x - wall_yard_z7 / 2) + (wall_z5_x + wall_yard_z5 / 2)) / 2;
+	    var door_1_y = wall_bush / 2 + ground_thick / 2;
+	    var door_1_z = wall_z5_z;
+	    door_1.matrixAutoUpdate = false;
+	    door_1.matrixWorldNeedsUpdate = true;
+	    var tMat_door1 = new THREE.Matrix4();
+	    tMat_door1.makeTranslation(door_1_x, door_1_y, door_1_z);
+	    var rMat_door1 = new THREE.Matrix4();
+	    rMat_door1.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_door1.multiply(tMat_door1);
+	    door_1.matrix = rMat_door1;
+	    update_bumper = { id: door_1._physijs.id };
+	    var tVec_door1 = new THREE.Vector3().setFromMatrixPosition(rMat_door1);
+	    update_bumper.pos = { x: tVec_door1.x, y: tVec_door1.y, z: tVec_door1.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    door_1.world.execute('updateTransform', update_bumper);
+	    // door_2
+	    var door_2_x = (wall_z1_x - wall_yard_z1 / 2 - yard_x) / 2;
+	    var door_2_y = wall_bush / 2 + ground_thick / 2;
+	    var door_2_z = wall_z1_z;
+	    door_2.matrixAutoUpdate = false;
+	    door_2.matrixWorldNeedsUpdate = true;
+	    var tMat_door2 = new THREE.Matrix4();
+	    tMat_door2.makeTranslation(door_2_x, door_2_y, door_2_z);
+	    var rMat_door2 = new THREE.Matrix4();
+	    rMat_door2.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    rMat_door2.multiply(tMat_door2);
+	    door_2.matrix = rMat_door2;
+	    update_bumper = { id: door_2._physijs.id };
+	    var tVec_door2 = new THREE.Vector3().setFromMatrixPosition(rMat_door2);
+	    update_bumper.pos = { x: tVec_door2.x, y: tVec_door2.y, z: tVec_door2.z };
+	    update_bumper.quat = { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+	    door_2.world.execute('updateTransform', update_bumper);
+
+	    var A_velo = new THREE.Vector3();
+	    A_velo = ball.getAngularVelocity();
+	    var L_velo = new THREE.Vector3();
+	    L_velo = ball.getLinearVelocity();
+	    if (A_velo.x == 0 && A_velo.y == 0 && A_velo.z == 0)
+	       ball.setAngularVelocity(new THREE.Vector3(0, 0.01,  0));
+	    var globalP = new THREE.Vector3();
+	    globalP.x = ball.position.x;
+	    globalP.y = ball.position.y;
+	    globalP.z = ball.position.z;
+        
+	    var groundMatrix = new THREE.Matrix4();
+	    groundMatrix.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	    var gMatInv = new THREE.Matrix4();
+	    gMatInv.getInverse(groundMatrix);
+	    var localP = new THREE.Vector3();
+	    localP = globalP.applyMatrix4(gMatInv);
+        var guard_off = 5;
+
+        //console.log("aaa", frame);
+        if (frame >= 10) {
+            if (localP.x > (yard_x - ball_radius - 2 + guard_off)) {
+                localP.x = yard_x - ball_radius - 2 - 1;
+                if (ball) scene.remove(ball);
+            }
+            if (localP.x < (-yard_x + ball_radius + 2 - guard_off)) {
+                localP.x = -yard_x + ball_radius + 2 + 1;
+                if (ball) scene.remove(ball);
+            }
+            if (localP.z > (yard_z - ball_radius - 2 + guard_off)) {
+                localP.z = yard_z - ball_radius - 2 - 1;
+                if (ball) scene.remove(ball);
+            }
+            if (localP.z < (-yard_z + ball_radius + 2 - guard_off)) {
+                localP.z = -yard_z + ball_radius + 2 + 1;
+                if (ball) scene.remove(ball);
+            }
+            if (localP.y < (ball_radius + ground_thick / 2 - 12)) {
+                localP.y = ball_radius + ground_thick / 2;
+                if (ball) scene.remove(ball);
+            }
+            if (localP.y > (50 + 2)) {
+                localP.y = 50 + 2;
+                if (ball) scene.remove(ball);
+            }
+        }
+	    var _gP = localP.applyMatrix4(groundMatrix);
+	    if (undefined == scene.getObjectByName("ball")) spawnBall(_gP.x, _gP.y, _gP.z);
+        
+
+	    var deltaRoll = totalRoll - lastRoll;
+	    //var deltaYaw = Number(yaw.innerText) - lastYaw;
+	    var deltaPitch = totalPitch - lastPitch;
+	    //if (deltaRoll > 5 || deltaRoll<-5)
+	    //    console.log("aaa", deltaRoll);
+	    //if (deltaPitch > 5 || deltaPitch < -5)
+	    //    console.log("bbb", deltaPitch);
+
+	    lastRoll = totalRoll;
+	    //lastYaw = Number(yaw.innerText);
+	    lastPitch = totalPitch;
+        
+	    scene.simulate();
+	    //console.log("aaa", deltaPitch);
+	    if (deltaRoll > 2 || deltaRoll < -2 || deltaPitch > 2 || deltaPitch < -2) {
+	        var boxMat_last = new THREE.Matrix4();
+	        boxMat_last.makeRotationFromEuler(new THREE.Euler(THREE.Math.degToRad(lastRoll), 0, THREE.Math.degToRad(lastPitch)));
+	        var boxMat_lInv = new THREE.Matrix4();
+	        boxMat_lInv.getInverse(boxMat_last);
+	        var boxMat_cur = new THREE.Matrix4();
+	        boxMat_cur.makeRotationFromEuler(new THREE.Euler(totalRoll, 0, totalPitch));
+	        boxMat_cur.multiply(boxMat_lInv);
+	        var ballMat = ball.matrix;
+	        boxMat_cur.multiply(ballMat);
+	        var me = boxMat_cur.elements;
+	        ball.position.x = me[12];
+	        ball.position.y = me[13];
+	        ball.position.z = me[14];
+	        ball.rotation.setFromRotationMatrix(boxMat_cur);
+	        //ball.setAngularFactor(0.1, 0.1, 0.1);
+	    }
+
+	    renderer.setViewport(0, 0, showWidth, showHeight);
+	    renderer.setScissor(0, 0, showWidth, showHeight);
+	    renderer.enableScissorTest(true);
+	    renderer.setClearColor(new THREE.Color().setRGB(0.0, 0.0, 0.0));
+	    //renderer.render(scene, camera);
+	    renderer.Leia_render(scene, camera, undefined, undefined, holoScreenScale);//4
+	};
+	function animate () {
+	    render();
+	    requestAnimationFrame(animate);
+	}
+
+	function setMode(mode) {
+	    renderer.setRenderMode(mode);
+	}
+	function setResolution(width, height) {
+	    var windowW = width;
+	    var windowH = height;
+	    renderer.Leia_setSize(windowW, windowH);//5
+	}
+	function setFov(fov) {
+	    var _fov = fov;
+	    renderer.setFov(_fov);
+	}
+	
+
+	document.onkeydown = function (event) {
+	    if (event && event.keyCode == 73) {
+
+	        var strValue = document.body.style.marginTop;
+	        var data = parseInt(strValue);
+	        if (strValue == "") {
+	            data = 0;
+	        }
+	        data = data - 1;
+	        document.body.style.marginTop = data + "px";
+	    }
+	    if (event && event.keyCode == 74) {
+	        var strValue = document.body.style.marginLeft;
+	        var data = parseInt(strValue);
+	        if (strValue == "") {
+	            data = 0;
+	        }
+	        data = data - 1;
+	        document.body.style.marginLeft = data + "px";
+	    }
+	    if (event && event.keyCode == 75) {
+	        var strValue = document.body.style.marginTop;
+	        var data = parseInt(strValue);
+	        if (strValue == "") {
+	            data = 0;
+	        }
+	        data = data + 1;
+	        document.body.style.marginTop = data + "px";
+	    }
+	    if (event && event.keyCode == 76) {
+	        var strValue = document.body.style.marginLeft;
+	        var data = parseInt(strValue);
+	        if (strValue == "") {
+	            data = 0;
+	        }
+	        data = data + 1;
+	        document.body.style.marginLeft = data + "px";
+	    }
+
+	};
+
+
+	var game_step_timer;
+	function gameStep() {
+	    game_step_timer = setTimeout(gameStep, 1000 / 120);
+	}
+function worker() {
+  var  transferableMessage = self.webkitPostMessage || self.postMessage,
+	
+	// enum
+	MESSAGE_TYPES = {
+		WORLDREPORT: 0,
+		COLLISIONREPORT: 1,
+		VEHICLEREPORT: 2,
+		CONSTRAINTREPORT: 3
+	},
+	
+	// temp variables
+	_object,
+	_vector,
+	_transform,
+	
+	// functions
+	public_functions = {},
+	getShapeFromCache,
+	setShapeCache,
+	createShape,
+	reportWorld,
+	reportVehicles,
+	reportCollisions,
+	reportConstraints,
+	
+	// world variables
+	fixedTimeStep, // used when calling stepSimulation
+	rateLimit, // sets whether or not to sync the simulation rate with fixedTimeStep
+	last_simulation_time,
+	last_simulation_duration = 0,
+	world,
+	transform,
+	_vec3_1,
+	_vec3_2,
+	_vec3_3,
+	_quat,
+	// private cache
+	_objects = {},
+	_vehicles = {},
+	_constraints = {},
+	_materials = {},
+	_objects_ammo = {},
+	_num_objects = 0,
+	_num_wheels = 0,
+	_num_constraints = 0,
+	_object_shapes = {},
+
+	// The following objects are to track objects that ammo.js doesn't clean
+	// up. All are cleaned up when they're corresponding body is destroyed.
+	// Unfortunately, it's very difficult to get at these objects from the
+	// body, so we have to track them ourselves.
+	_motion_states = {}, 
+	// Don't need to worry about it for cached shapes.
+    _noncached_shapes = {},
+	// A body with a compound shape always has a regular shape as well, so we
+	// have track them separately.
+    _compound_shapes = {}, 
+	
+	// object reporting
+	REPORT_CHUNKSIZE, // report array is increased in increments of this chunk size
+	
+	WORLDREPORT_ITEMSIZE = 14, // how many float values each reported item needs
+	worldreport,
+
+	COLLISIONREPORT_ITEMSIZE = 5, // one float for each object id, and a Vec3 contact normal
+	collisionreport,
+
+	VEHICLEREPORT_ITEMSIZE = 9, // vehicle id, wheel index, 3 for position, 4 for rotation
+	vehiclereport,
+
+	CONSTRAINTREPORT_ITEMSIZE = 6, // constraint id, offset object, offset, applied impulse
+	constraintreport;
+
+var ab = new ArrayBuffer( 1 );
+
+transferableMessage( ab, [ab] );
+var SUPPORT_TRANSFERABLE = ( ab.byteLength === 0 );
+
+getShapeFromCache = function ( cache_key ) {
+	if ( _object_shapes[ cache_key ] !== undefined ) {
+		return _object_shapes[ cache_key ];
+	}
+	return null;
 };
 
-var LeiaWebGLRenderer = function (parameters) {
-    var _this = this;
-    parameters = parameters || {};
-    THREE.WebGLRenderer.call(this, parameters);
-
-    //0: one view 1: 64 view 2: swizzle
-    if (parameters.renderMode == undefined) {
-        this._renderMode = 0;
-        console.log("renderMode undefined!");
-    } else {
-        this._renderMode = parameters.renderMode;
-        console.log("setRenderMode:" + this._renderMode);
-    }
-
-    if (parameters.camPanelVisible == undefined) {
-        this.bGlobalView = true;
-        console.log("camPanelVisible undefined!");
-    } else {
-        this.bGlobalView = parameters.camPanelVisible;
-        console.log("set camPanelVisible:" + parameters.camPanelVisible);
-    }
-
-    if (parameters.gyroPanelVisible == undefined) {
-        this.bGyroSimView = true;
-        console.log("gyroPanelVisible undefined!");
-    } else {
-        this.bGyroSimView = parameters.gyroPanelVisible;
-        console.log("set gyroPanelVisible:" + parameters.gyroPanelVisible);
-    }
-
-    if (parameters.camFov == undefined) {
-        this.view64fov = 50;
-        console.log("camFov undefined, set it to default 50!");
-    } else {
-        this.view64fov = parameters.camFov;
-        console.log("set camFov:" + parameters.camFov);
-    }
-    var _canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElement('canvas'),
-    _viewportWidth,
-	_viewportHeight;
-    // for 64 view YSCL
-    this.setRenderMode = function (renderMode) {
-        this._renderMode = renderMode;
-    }
-    this.setFov = function (fov) {
-        this.view64fov = fov;
-    }
-    
-    // for 64 view arrangement YSCL
-    this.GGyroSimView = {
-        //left: 0.75,
-        //bottom: 0.5,
-        //width: 0.25,
-        //height: 0.25,
-        left: 0.0,
-        bottom: 0.0,
-        width: 1.0,
-        height: 1.0,
-        up: [0, 1, 0],
-    };
-    var simulateGyro = function (object) {
-        var _this = this;
-        this.screen = { left: 0, top: 0, width: 0, height: 0 };
-        this.screen.left = _canvas.width * _that.GGyroSimView.left;
-        this.screen.top = _canvas.height * (1.0-_that.GGyroSimView.bottom - _that.GGyroSimView.height);
-        this.screen.width = _canvas.width * _that.GGyroSimView.width;
-        this.screen.height = _canvas.height * _that.GGyroSimView.height;
-        var _lastPos = new THREE.Vector2();
-        var _accuDelta = new THREE.Vector2();
-        var getMouseOnScreen = (function () {
-            var vector = new THREE.Vector2();
-            return function (layerX, layerY) {
-                vector.set(
-                    (layerX - _this.screen.left) / _this.screen.width,
-                    (layerY - _this.screen.top) / _this.screen.height
-                );
-                return vector;
-            };
-        }());
-        function mousedown(event) {
-            var leftBunder = _this.screen.left;
-            var rightBunder = _this.screen.left + _this.screen.width;
-            var topBunder = _this.screen.top;
-            var bottomBunder = _this.screen.top + _this.screen.height;
-            if (event.layerX > leftBunder && event.layerX < rightBunder && event.layerY > topBunder && event.layerY < bottomBunder) {
-                event.preventDefault();
-                // event.stopPropagation();
-                _lastPos.copy(getMouseOnScreen(event.layerX, event.layerY));
-                document.addEventListener('mousemove', mousemove, false);
-                document.addEventListener('mouseup', mouseup, false);
-            }
-        }
-        function mousemove(event) {
-            var leftBunder = _this.screen.left;
-            var rightBunder = _this.screen.left + _this.screen.width;
-            var topBunder = _this.screen.top;
-            var bottomBunder = _this.screen.top + _this.screen.height;
-            if (event.layerX > leftBunder && event.layerX < rightBunder && event.layerY > topBunder && event.layerY < bottomBunder) {
-                event.preventDefault();
-                // event.stopPropagation();
-                var _curPos = new THREE.Vector2();
-                _curPos.copy(getMouseOnScreen(event.layerX, event.layerY));
-                var _deltaPos = new THREE.Vector2();
-                _accuDelta.add(_deltaPos.subVectors(_curPos, _lastPos));
-                _lastPos.copy(_curPos);
-            }
-        }
-        function mouseup(event) {
-            var leftBunder = _this.screen.left;
-            var rightBunder = _this.screen.left + _this.screen.width;
-            var topBunder = _this.screen.top;
-            var bottomBunder = _this.screen.top + _this.screen.height;
-            if (event.layerX > leftBunder && event.layerX < rightBunder && event.layerY > topBunder && event.layerY < bottomBunder) {
-                event.preventDefault();
-                //  event.stopPropagation();
-                document.removeEventListener('mousemove', mousemove);
-                document.removeEventListener('mouseup', mouseup);
-            }
-            document.removeEventListener('mousemove', mousemove);
-            document.removeEventListener('mouseup', mouseup);
-        }
-        _that.GyroRealRoll = 0;
-        _that.GyroRealPitch = 0;
-        _that.GyroRealYaw = 0;
-        this.update = function () {
-            _this.screen.left = _canvas.width * _that.GGyroSimView.left;
-            _this.screen.top = _canvas.height * (1.0-_that.GGyroSimView.bottom - _that.GGyroSimView.height);
-            _this.screen.width = _canvas.width * _that.GGyroSimView.width;
-            _this.screen.height = _canvas.height * _that.GGyroSimView.height;
-
-            _that.GyroSimRoll = _accuDelta.y * 30;
-            _that.GyroSimPitch = _accuDelta.x * -30;
-            _that.GyroSimYaw = 0;
-
-            object.quaternion.setFromEuler(new THREE.Euler(THREE.Math.degToRad(_that.GyroSimRoll + _that.GyroRealRoll), 0, THREE.Math.degToRad(_that.GyroSimPitch + _that.GyroRealPitch)));
-        }
-        document.addEventListener('mousedown', mousedown, false);
-        this.update();
-    }
-
-    // global view
-    this.GObserveView = {
-        left: 0.0,
-        //bottom: 0.0,
-        //width: 1.0,
-        //height: 1.0,
-        bottom: 0.5,
-        width: 0.25,
-        height: 0.25,
-        up: [0, 1, 0],
-    };
-    this.spanSphereMode = false;
-    var _that = this;
-    var drapControls = function (object, domElement) {
-        var _this = this;
-        var STATE = { NONE: -1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
-        this.object = object;
-        this.domElement = (domElement !== undefined) ? domElement : document;
-        this.enabled = true;
-        this.screen = { left: 0, top: 0, width: 0, height: 0 };
-        this.rotateSpeed = 0.2;
-        this.zoomSpeed = 0.2;
-        this.panSpeed = 0.6;
-        this.noRotate = false;
-        this.noZoom = false;
-        this.noPan = false;
-        this.noRoll = false;
-        this.staticMoving = false;
-        this.dynamicDampingFactor = 0.3;
-        this.minDistance = 0;
-        this.maxDistance = Infinity;
-        this.screen.left = 0;
-        this.screen.top = _canvas.height * (1.0-_that.GObserveView.bottom - _that.GObserveView.height);
-        this.screen.width = _canvas.width * _that.GObserveView.width;
-        this.screen.height = _canvas.height * _that.GObserveView.height;
-
-        this.target = new THREE.Vector3();
-        var EPS = 0.000001;
-        var lastPosition = new THREE.Vector3();
-        var _state = STATE.NONE,
-        _prevState = STATE.NONE,
-        _eye = new THREE.Vector3(),
-        _rotateStart = new THREE.Vector3(),
-        _rotateEnd = new THREE.Vector3(),
-        _zoomStart = new THREE.Vector2(),
-        _zoomEnd = new THREE.Vector2(),
-        _touchZoomDistanceStart = 0,
-        _touchZoomDistanceEnd = 0,
-        _panStart = new THREE.Vector2(),
-        _panEnd = new THREE.Vector2();
-
-        this.target0 = this.target.clone();
-        this.position0 = this.object.position.clone();
-        this.up0 = this.object.up.clone();
-
-        var changeEvent = { type: 'change' };
-        var startEvent = { type: 'start' };
-        var endEvent = { type: 'end' };
-        var getMouseOnScreen = (function () {
-            var vector = new THREE.Vector2();
-            return function (layerX, layerY) {
-                vector.set(
-                    (layerX - _this.screen.left) / _this.screen.width,
-                    (layerY - _this.screen.top) / _this.screen.height
-                );
-                return vector;
-            };
-        }());
-        var getMouseProjectionOnBall = (function () {
-            var vector = new THREE.Vector3();
-            var objectUp = new THREE.Vector3();
-            var mouseOnBall = new THREE.Vector3();
-            return function (layerX, layerY) {
-                mouseOnBall.set(
-                    (layerX - _this.screen.width * 0.5 - _this.screen.left) / (_this.screen.width * .5),
-                    (_this.screen.height * 0.5 + _this.screen.top - layerY) / (_this.screen.height * .5),
-                    0.0
-                );
-
-                var length = mouseOnBall.length();
-                if (_this.noRoll) {
-                    if (length < Math.SQRT1_2) {
-                        mouseOnBall.z = Math.sqrt(1.0 - length * length);
-                    } else {
-                        mouseOnBall.z = .5 / length;
-                    }
-                } else if (length > 1.0) {
-                    mouseOnBall.normalize();
-                } else {
-                    mouseOnBall.z = Math.sqrt(1.0 - length * length);
-                }
-
-                _eye.copy(_this.object.position).sub(_this.target);
-                vector.copy(_this.object.up).setLength(mouseOnBall.y)
-                vector.add(objectUp.copy(_this.object.up).cross(_eye).setLength(mouseOnBall.x));
-                vector.add(_eye.setLength(mouseOnBall.z));
-                return vector;
-            };
-        }());
-
-        this.rotateCamera = (function () {
-            var axis = new THREE.Vector3(),
-                quaternion = new THREE.Quaternion();
-            return function () {
-                var angle = Math.acos(_rotateStart.dot(_rotateEnd) / _rotateStart.length() / _rotateEnd.length());
-                if (angle) {
-                    axis.crossVectors(_rotateStart, _rotateEnd).normalize();
-                    angle *= _this.rotateSpeed;
-                    quaternion.setFromAxisAngle(axis, -angle);
-                    _eye.applyQuaternion(quaternion);
-                    _this.object.up.applyQuaternion(quaternion);
-                    _rotateEnd.applyQuaternion(quaternion);
-                    if (_this.staticMoving) {
-                        _rotateStart.copy(_rotateEnd);
-                    } else {
-                        quaternion.setFromAxisAngle(axis, angle * (_this.dynamicDampingFactor - 1.0));
-                        _rotateStart.applyQuaternion(quaternion);
-                    }
-                }
-            }
-        }());
-
-        this.zoomCamera = function () {
-            if (_state === STATE.TOUCH_ZOOM_PAN) {
-                var factor = _touchZoomDistanceStart / _touchZoomDistanceEnd;
-                _touchZoomDistanceStart = _touchZoomDistanceEnd;
-                _eye.multiplyScalar(factor);
-            } else {
-                var factor = 1.0 + (_zoomEnd.y - _zoomStart.y) * _this.zoomSpeed;
-                if (factor !== 1.0 && factor > 0.0) {
-                    _eye.multiplyScalar(factor);
-                    if (_this.staticMoving) {
-                        _zoomStart.copy(_zoomEnd);
-                    } else {
-                        _zoomStart.y += (_zoomEnd.y - _zoomStart.y) * this.dynamicDampingFactor;
-                    }
-                }
-            }
-        };
-
-        this.panCamera = (function () {
-            var mouseChange = new THREE.Vector2(),
-                objectUp = new THREE.Vector3(),
-                pan = new THREE.Vector3();
-            return function () {
-                mouseChange.copy(_panEnd).sub(_panStart);
-                if (mouseChange.lengthSq()) {
-                    mouseChange.multiplyScalar(_eye.length() * _this.panSpeed);
-                    pan.copy(_eye).cross(_this.object.up).setLength(mouseChange.x);
-                    pan.add(objectUp.copy(_this.object.up).setLength(mouseChange.y));
-                    _this.object.position.add(pan);
-                    _this.target.add(pan);
-                    if (_this.staticMoving) {
-                        _panStart.copy(_panEnd);
-                    } else {
-                        _panStart.add(mouseChange.subVectors(_panEnd, _panStart).multiplyScalar(_this.dynamicDampingFactor));
-                    }
-                }
-            }
-        }());
-
-        this.checkDistances = function () {
-            if (!_this.noZoom || !_this.noPan) {
-                if (_eye.lengthSq() > _this.maxDistance * _this.maxDistance) {
-                    _this.object.position.addVectors(_this.target, _eye.setLength(_this.maxDistance));
-                }
-                if (_eye.lengthSq() < _this.minDistance * _this.minDistance) {
-                    _this.object.position.addVectors(_this.target, _eye.setLength(_this.minDistance));
-                }
-            }
-        };
-
-        this.update = function () {
-            _this.screen.left = 0;
-            _this.screen.top = _canvas.height * (1.0-_that.GObserveView.bottom - _that.GObserveView.height);
-            _this.screen.width = _canvas.width * _that.GObserveView.width;
-            _this.screen.height = _canvas.height * _that.GObserveView.height;
-            _eye.subVectors(_this.object.position, _this.target);
-            if (!_this.noRotate) {
-                _this.rotateCamera();
-            }
-            if (!_this.noZoom) {
-                _this.zoomCamera();
-            }
-            if (!_this.noPan) {
-                _this.panCamera();
-            }
-            _this.object.position.addVectors(_this.target, _eye);
-            _this.checkDistances();
-            _this.object.lookAt(_this.target);
-            if (lastPosition.distanceToSquared(_this.object.position) > EPS) {
-                _this.dispatchEvent(changeEvent);
-                lastPosition.copy(_this.object.position);
-            }
-        };
-
-        this.reset = function () {
-            _state = STATE.NONE;
-            _prevState = STATE.NONE;
-            _this.target.copy(_this.target0);
-            _this.object.position.copy(_this.position0);
-            _this.object.up.copy(_this.up0);
-            _eye.subVectors(_this.object.position, _this.target);
-            _this.object.lookAt(_this.target);
-            _this.dispatchEvent(changeEvent);
-            lastPosition.copy(_this.object.position);
-        };
-
-        function mousedown(event) {
-            if (_this.enabled == false) return;
-            var leftBunder = _this.screen.left;
-            var rightBunder = _this.screen.left + _this.screen.width;
-            var topBunder = _this.screen.top;
-            var bottomBunder = _this.screen.top + _this.screen.height;
-            if (event.layerX > leftBunder && event.layerX < rightBunder && event.layerY > topBunder && event.layerY < bottomBunder) {
-                if (_this.enabled === false) return;
-                event.preventDefault();
-                //  event.stopPropagation();
-                if (_state === STATE.NONE) {
-                    _state = event.button;
-                }
-
-                if (_state === STATE.ROTATE && !_this.noRotate) {
-                    _rotateStart.copy(getMouseProjectionOnBall(event.layerX, event.layerY));
-                    _rotateEnd.copy(_rotateStart);
-                } else if (_state === STATE.ZOOM && !_this.noZoom) {
-                    _zoomStart.copy(getMouseOnScreen(event.layerX, event.layerY));
-                    _zoomEnd.copy(_zoomStart);
-                } else if (_state === STATE.PAN && !_this.noPan) {
-                    _panStart.copy(getMouseOnScreen(event.layerX, event.layerY));
-                    _panEnd.copy(_panStart)
-                }
-                document.addEventListener('mousemove', mousemove, false);
-                document.addEventListener('mouseup', mouseup, false);
-                _this.dispatchEvent(startEvent);
-            }
-        }
-
-        function mousemove(event) {
-            if (_this.enabled == false) return;
-            var leftBunder = _this.screen.left;
-            var rightBunder = _this.screen.left + _this.screen.width;
-            var topBunder = _this.screen.top;
-            var bottomBunder = _this.screen.top + _this.screen.height;
-            if (event.layerX > leftBunder && event.layerX < rightBunder && event.layerY > topBunder && event.layerY < bottomBunder) {
-                if (_this.enabled === false) return;
-                event.preventDefault();
-                // event.stopPropagation();
-                if (_state === STATE.ROTATE && !_this.noRotate) {
-                    _rotateEnd.copy(getMouseProjectionOnBall(event.layerX, event.layerY));
-                } else if (_state === STATE.ZOOM && !_this.noZoom) {
-                    _zoomEnd.copy(getMouseOnScreen(event.layerX, event.layerY));
-                } else if (_state === STATE.PAN && !_this.noPan) {
-                    _panEnd.copy(getMouseOnScreen(event.layerX, event.layerY));
-                }
-            }
-        }
-
-        function mouseup(event) {
-            var leftBunder = _this.screen.left;
-            var rightBunder = _this.screen.left + _this.screen.width;
-            var topBunder = _this.screen.top;
-            var bottomBunder = _this.screen.top + _this.screen.height;
-            if (event.layerX > leftBunder && event.layerX < rightBunder && event.layerY > topBunder && event.layerY < bottomBunder) {
-                event.preventDefault();
-                // event.stopPropagation();
-                _state = STATE.NONE;
-                document.removeEventListener('mousemove', mousemove);
-                document.removeEventListener('mouseup', mouseup);
-                _this.dispatchEvent(endEvent);
-            }
-            document.removeEventListener('mousemove', mousemove);
-            document.removeEventListener('mouseup', mouseup);
-        }
-
-        function mousewheel(event) {
-            var leftBunder = _this.screen.left;
-            var rightBunder = _this.screen.left + _this.screen.width;
-            var topBunder = _this.screen.top;
-            var bottomBunder = _this.screen.top + _this.screen.height;
-            if (event.layerX > leftBunder && event.layerX < rightBunder && event.layerY > topBunder && event.layerY < bottomBunder) {
-                if (_this.enabled === false) return;
-                event.preventDefault();
-                //  event.stopPropagation();
-                var delta = 0;
-                if (event.wheelDelta) {
-                    delta = event.wheelDelta / 40;
-                } else if (event.detail) {
-                    delta = - event.detail / 3;
-                }
-                _zoomStart.y += delta * 0.01;
-                _this.dispatchEvent(startEvent);
-                _this.dispatchEvent(endEvent);
-            }
-        }
-        this.domElement.addEventListener('mousedown', mousedown, false);
-        this.domElement.addEventListener('mousewheel', mousewheel, false);
-        this.update();
-    };
-    drapControls.prototype = Object.create(THREE.EventDispatcher.prototype);
-
-    var AxisPickerMater = function (parameters) {
-        THREE.MeshBasicMaterial.call(this);
-        this.depthTest = false;
-        this.depthWrite = false;
-        this.side = THREE.FrontSide;
-        this.transparent = true;
-        this.setValues(parameters);
-        this.oldColor = this.color.clone();
-        this.oldOpacity = this.opacity;
-        this.highlight = function (highlighted) {
-            if (highlighted) {
-                this.color.setRGB(1, 1, 0);
-                this.opacity = 1;
-            } else {
-                this.color.copy(this.oldColor);
-                this.opacity = this.oldOpacity;
-            }
-        };
-    };
-    AxisPickerMater.prototype = Object.create(THREE.MeshBasicMaterial.prototype);
-    var AxisPickerLineMater = function (parameters) {
-        THREE.LineBasicMaterial.call(this);
-        this.depthTest = false;
-        this.depthWrite = false;
-        this.transparent = true;
-        this.linewidth = 1;
-        this.setValues(parameters);
-        this.oldColor = this.color.clone();
-        this.oldOpacity = this.opacity;
-        this.highlight = function (highlighted) {
-            if (highlighted) {
-                this.color.setRGB(1, 1, 0);
-                this.opacity = 1;
-            } else {
-                this.color.copy(this.oldColor);
-                this.opacity = this.oldOpacity;
-            }
-        };
-    };
-    AxisPickerLineMater.prototype = Object.create(THREE.LineBasicMaterial.prototype);
-    var AxisPickerTransForm = function (pickerSize) {
-        var _this = this;
-        var bShowShell = false;
-        var bShowActPlane = false;
-        this.init = function () {
-            THREE.Object3D.call(this);
-            this.handles = new THREE.Object3D();
-            this.pickers = new THREE.Object3D();
-            this.planes = new THREE.Object3D();
-            this.add(this.handles);
-            this.add(this.pickers);
-            this.add(this.planes);
-            var geoPlane = new THREE.PlaneGeometry(20 * pickerSize, 20 * pickerSize, 1, 1);
-            var matPlane = new THREE.MeshBasicMaterial({ wireframe: true });
-            matPlane.side = THREE.DoubleSide;
-            var planes = {
-                "XY": new THREE.Mesh(geoPlane, matPlane),
-                "YZ": new THREE.Mesh(geoPlane, matPlane),
-                "XZ": new THREE.Mesh(geoPlane, matPlane),
-                "XYZE": new THREE.Mesh(geoPlane, matPlane)
-            };
-            this.actPlane = planes["XY"];
-            planes["YZ"].rotation.set(0, Math.PI / 2, 0);
-            planes["XZ"].rotation.set(-Math.PI / 2, 0, 0);
-            for (var i in planes) {
-                planes[i].name = i;
-                this.planes.add(planes[i]);
-                this.planes[i] = planes[i];
-                planes[i].visible = false;
-            }
-            var setupAxisPickers = function (pickersMap, parent) {
-                for (var name in pickersMap) {
-                    for (i = pickersMap[name].length; i--;) {
-                        var object = pickersMap[name][i][0];
-                        var position = pickersMap[name][i][1];
-                        var rotation = pickersMap[name][i][2];
-                        object.name = name;
-                        if (position)
-                            object.position.set(position[0], position[1], position[2]);
-                        if (rotation)
-                            object.rotation.set(rotation[0], rotation[1], rotation[2]);
-                        parent.add(object);
-                    }
-                }
-            };
-            setupAxisPickers(this.handleAxisPickers, this.handles);
-            setupAxisPickers(this.pickerAxisPickers, this.pickers);
-
-            this.traverse(function (child) {
-                if (child instanceof THREE.Mesh) {
-                    child.updateMatrix();
-                    var tempGeometry = new THREE.Geometry();
-                    tempGeometry.merge(child.geometry, child.matrix);
-                    child.geometry = tempGeometry;
-                    child.position.set(0, 0, 0);
-                    child.rotation.set(0, 0, 0);
-                    child.scale.set(1, 1, 1);
-                }
-            });
-        }
-        this.show = function (oneDir) {
-            this.traverse(function (child) {
-                child.visible = true;
-                if (child.parent == _this.pickers)
-                    child.visible = bShowShell;
-                if (child.parent == _this.planes)
-                    child.visible = false;
-                if (child.parent == _this.handles && (child.name == "X" || child.name == "Z") && oneDir)
-                    child.visible = false;
-            });
-            this.actPlane.visible = bShowActPlane;
-        }
-
-        this.hide = function () {
-            this.traverse(function (child) {
-                child.visible = false;
-            });
-        }
-
-        this.highlight = function (axis) {
-            this.traverse(function (child) {
-                if (child.material && child.material.highlight) {
-                    if (child.name == axis) {
-                        child.material.highlight(true);
-                    } else {
-                        child.material.highlight(false);
-                    }
-                }
-            });
-        };
-        this.update = function (rotation) {
-            this.traverse(function (child) {
-                child.quaternion.setFromEuler(rotation);
-            });
-        };
-
-    };
-    AxisPickerTransForm.prototype = Object.create(THREE.Object3D.prototype);
-    //AxisPickerTransForm.prototype.update = function (rotation) {
-    //    this.traverse(function (child) {
-    //        child.quaternion.setFromEuler(rotation);
-    //    });
-    //};
-    var AxisPickerTranslate = function (pickerSize) {
-        AxisPickerTransForm.call(this, pickerSize);
-        var geoArrow = new THREE.Geometry();
-        var mesh = new THREE.Mesh(new THREE.CylinderGeometry(0, 0.05 * pickerSize, 0.2 * pickerSize, 12, 1, false));
-        mesh.position.y = 0.5 * pickerSize;
-        mesh.matrix.compose(mesh.position, mesh.quaternion, mesh.scale);
-        geoArrow.merge(mesh.geometry, mesh.matrix);
-        var lineXGeometry = new THREE.Geometry();
-        lineXGeometry.vertices.push(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1 * pickerSize, 0, 0));
-        var lineYGeometry = new THREE.Geometry();
-        lineYGeometry.vertices.push(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1 * pickerSize, 0));
-        var lineZGeometry = new THREE.Geometry();
-        lineZGeometry.vertices.push(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1 * pickerSize));
-        this.handleAxisPickers = {
-            X: [
-				[new THREE.Mesh(geoArrow, new AxisPickerMater({ color: 0xff0000 })), [0.5 * pickerSize, 0, 0], [0, 0, -Math.PI / 2]],
-				[new THREE.Line(lineXGeometry, new AxisPickerLineMater({ color: 0xff0000 }))]
-            ],
-            Y: [
-				[new THREE.Mesh(geoArrow, new AxisPickerMater({ color: 0x00ff00 })), [0, 0.5 * pickerSize, 0]],
-				[new THREE.Line(lineYGeometry, new AxisPickerLineMater({ color: 0x00ff00 }))]
-            ],
-            Z: [
-				[new THREE.Mesh(geoArrow, new AxisPickerMater({ color: 0x0000ff })), [0, 0, 0.5 * pickerSize], [Math.PI / 2, 0, 0]],
-				[new THREE.Line(lineZGeometry, new AxisPickerLineMater({ color: 0x0000ff }))]
-            ]
-        };
-        this.pickerAxisPickers = {
-            X: [
-				[new THREE.Mesh(new THREE.CylinderGeometry(0.2 * pickerSize, 0, 1 * pickerSize, 4, 1, false), new AxisPickerMater({ color: 0xff0000, opacity: 0.25 })), [0.6 * pickerSize, 0, 0], [0, 0, -Math.PI / 2]]
-            ],
-            Y: [
-				[new THREE.Mesh(new THREE.CylinderGeometry(0.2 * pickerSize, 0, 1 * pickerSize, 4, 1, false), new AxisPickerMater({ color: 0x00ff00, opacity: 0.25 })), [0, 0.6 * pickerSize, 0]]
-            ],
-            Z: [
-				[new THREE.Mesh(new THREE.CylinderGeometry(0.2 * pickerSize, 0, 1 * pickerSize, 4, 1, false), new AxisPickerMater({ color: 0x0000ff, opacity: 0.25 })), [0, 0, 0.6 * pickerSize], [Math.PI / 2, 0, 0]]
-            ]
-        };
-        this.setActPlane = function (axis) {
-            if (axis == "X") {
-                this.actPlane = this.planes["XY"];
-            }
-            if (axis == "Y") {
-                this.actPlane = this.planes["XY"];
-            }
-            if (axis == "Z") {
-                this.actPlane = this.planes["XZ"];
-            }
-        };
-
-        this.init();
-    };
-    AxisPickerTranslate.prototype = Object.create(AxisPickerTransForm.prototype);
-    var pickControls = function (camera, domElement, pickerSize) {
-        THREE.Object3D.call(this);
-        domElement = (domElement !== undefined) ? domElement : document;
-        this.axisPickers = {};
-        this.axisPickers[0] = new AxisPickerTranslate(pickerSize);
-        this.add(this.axisPickers[0]);
-        var _this = this;
-        this.object = undefined;
-        var _dragging = false;
-        this.axis = null;
-        this.screen = { left: 0, top: 0, width: 0, height: 0 };
-        this.screen.left = 0;
-        this.screen.top = _canvas.height * (1.0-_that.GObserveView.bottom - _that.GObserveView.height);
-        this.screen.width = _canvas.width * _that.GObserveView.width;
-        this.screen.height = _canvas.height * _that.GObserveView.height;
-        var ray = new THREE.Raycaster();
-        var projector = new THREE.Projector();
-        var pointerVec = new THREE.Vector3();
-        var camPosition = new THREE.Vector3();
-        var camPos = new THREE.Vector3();
-        var lastPos = new THREE.Vector3();
-        var parentRMat = new THREE.Matrix4();
-        var curPos = new THREE.Vector3();
-        var startPos = new THREE.Vector3();
-
-        domElement.addEventListener("mousemove", onMouseHover, false);
-        domElement.addEventListener("mousedown", onMouseDown, false);
-        domElement.addEventListener("mousemove", onMouseMove, false);
-        domElement.addEventListener("mousewheel", onMouseWheel, false);
-        domElement.addEventListener("mouseup", onMouseUp, false);
-
-        this.attach = function (obj, oneDir) {
-            _this.object = obj;
-            _this.update();
-            this.axisPickers[0].show(oneDir);
-        };
-        this.update = function () {
-            _this.screen.left = 0;
-            _this.screen.top = _canvas.height * (1.0-_that.GObserveView.bottom - _that.GObserveView.height);
-            _this.screen.width = _canvas.width * _that.GObserveView.width;
-            _this.screen.height = _canvas.height * _that.GObserveView.height;
-            if (_this.object == undefined)
-                return;
-            camPosition.setFromMatrixPosition(_this.object.matrix);
-            camPos.setFromMatrixPosition(camera.matrix);
-            _this.position.copy(camPosition);
-            _this.axisPickers[0].highlight(_this.axis);
-        };
-
-        function onMouseHover(event) {
-            if (_this.object == undefined || _dragging == true) return;
-            event.preventDefault();
-            var pointer = event;
-            var intersect = intersectObjs(pointer, _this.axisPickers[0].pickers.children);
-            if (intersect) {
-                _this.axis = intersect.object.name;
-                _this.update();
-            } else if (_this.axis != null) {
-                _this.axis = null;
-                _this.update();
-            }
-        }
-
-        function onMouseDown(event) {
-            //var _state = event.button;
-            //if (_state != 2) {
-            if (_this.object == undefined || _dragging == true) return;
-           // event.preventDefault();
-            //  event.stopPropagation();
-            var pointer = event;
-            if (pointer.button == 0 || pointer.button == undefined) {
-                var intersect = intersectObjs(pointer, _this.axisPickers[0].pickers.children);
-                if (intersect) {
-                    _this.axis = intersect.object.name;
-                    _this.update();
-                    _this.axisPickers[0].setActPlane(_this.axis);
-                    var planeIntersect = intersectObjs(pointer, [_this.axisPickers[0].actPlane]);
-                    if (planeIntersect) {
-                        lastPos.copy(_this.object.position);
-                        parentRMat.extractRotation(_this.object.parent.matrixWorld);
-                        startPos.copy(planeIntersect.point);
-                    }
-                }
-                _dragging = true;
-            } else if (pointer.button == 2 && _this.axis !== null && _this.object.name == "eyeCenter") {
-                if (_this.object == undefined || _dragging == true) return;
-                event.preventDefault();
-                event.stopPropagation();
-                _that.spanSphereMode = !_that.spanSphereMode;
-
-            } else {
-                _this.axisPickers[0].traverse(function (child) {
-                    child.visible = !child.visible;
-                });
-                _this.object.visible = !_this.object.visible;
-                if (_this.object.name == "tarPlane") {
-                    console.log("tarPlane distance:");
-                }
-            }
-
-        }
-
-        function onMouseMove(event) {
-            if (_this.object == undefined || _this.axis == null || _dragging == false) return;
-            event.preventDefault();
-            //  event.stopPropagation();
-            var pointer = event;
-            var planeIntersect = intersectObjs(pointer, [_this.axisPickers[0].actPlane]);
-            if (planeIntersect) {
-                curPos.copy(planeIntersect.point);
-                curPos.sub(startPos);
-                if (_this.axis.search("X") == -1) curPos.x = 0;
-                if (_this.axis.search("Y") == -1) curPos.y = 0;
-                if (_this.axis.search("Z") == -1) curPos.z = 0;
-                _this.object.position.copy(lastPos);
-                _this.object.position.add(curPos);
-            }
-            _this.update();
-        }
-        function onMouseUp(event) {
-            _dragging = false;
-            onMouseHover(event);
-        }
-        function onMouseWheel(event) {
-            if (_this.object == undefined || _this.axis == null || _dragging == true) return;
-            event.preventDefault();
-            //   event.stopPropagation();
-            var delta = 0;
-            if (event.wheelDelta) {
-                delta = event.wheelDelta / 40;
-            } else if (event.detail) {
-                delta = - event.detail / 3;
-            }
-            if (_this.object.name == "eyeCenter")
-                _that.view64fov += delta * 0.1;
-            if (_this.object.name == "tarPlane") {
-                _this.object.scale.x += delta * 0.01;
-                _this.object.scale.y += delta * 0.01;
-            }
-        }
-
-        var getMouseOnScreen = (function () {
-            var vector = new THREE.Vector2();
-            return function (layerX, layerY) {
-                vector.set(
-                    (layerX - _this.screen.left) / _this.screen.width,
-                    (layerY - _this.screen.top) / _this.screen.height
-                );
-                return vector;
-            };
-        }());
-
-        function intersectObjs(pointer, objs) {
-            var _MousePos = new THREE.Vector2();
-            _MousePos.copy(getMouseOnScreen(pointer.layerX, pointer.layerY));
-            pointerVec.set(_MousePos.x * 2 - 1, -2 * _MousePos.y + 1, 0.5);
-            projector.unprojectVector(pointerVec, camera);
-            ray.set(camPos, pointerVec.sub(camPos).normalize());
-            var intersections = ray.intersectObjects(objs, true);
-            return intersections[0] ? intersections[0] : false;
-        }
-    }
-    pickControls.prototype = Object.create(THREE.Object3D.prototype);
-
-    this.Leia_setSize = function (width, height, updateStyle) {
-        _canvas.width = width * this.devicePixelRatio;
-        _canvas.height = height * this.devicePixelRatio;
-        _viewportWidth = _canvas.width,
-        _viewportHeight = _canvas.height;
-        if (updateStyle !== false) {
-            _canvas.style.width = width + 'px';
-            _canvas.style.height = height + 'px';
-        }
-        this.setSize(width, height, updateStyle);
-        if (this._shaderManager !== undefined)
-            this._shaderManager.changeSzie(width, height);
-    };
-
-    // shaders start
-    this.nShaderMode = 0; // 0:basic; 1:sharpen; 2:surpersample
-    this._shaderManager = undefined;
-    this.bShaderManInit = false;
-    var CShaderManager = function () {
-        this._swizzleRenderTarget = undefined;
-        this.cameraSWIZZLE = undefined;
-        this.LEIA_output;
-        this.swizzleMesh;
-        this.materialSwizzle;
-        this.matBasic;
-        this.matSuperSample;
-        this.matSharpen;
-        this._swizzleRenderTargetSftX;
-        this._swizzleRenderTargetSftY;
-        this._swizzleRenderTargetSftXY;
-        this.width = _viewportWidth;
-        this.height = _viewportHeight;
-
-        this.cameraSWIZZLE = new THREE.OrthographicCamera(this.width / -2, this.width / 2, this.height / 2, this.height / -2, -1, 1);
-        this.cameraSWIZZLE.position.z = 0;
-        this.LEIA_output = new THREE.Scene();
-        if (this.LEIA_output.children.length > 0) this.LEIA_output.remove(this.swizzleMesh);
-        var swizzleBackgroundGeometry = new THREE.PlaneGeometry(this.width, this.height);
-        var _SwizzleVertexShaderSrc =
-        "varying vec2 vUv;" +
-        "void main() {" +
-        "    vUv = uv;" +
-        "    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );" +
-        "}";
-        var _SwizzleFragmentShaderSrc =
-        "precision highp float;" +
-        "varying  vec2 vUv; 			\n" +
-        "uniform sampler2D tNormalViews; 			\n" +
-        "uniform vec2 renderSize;              \n " +
-        "float getPixel( in float amplitude, in sampler2D texture, in vec2 viewId, in vec2 sPixId) {  \n" +
-            "vec2 id  = vec2( ( sPixId.s + viewId.s*renderSize.x/8.0 )/renderSize.x + 1.0/(2.0*renderSize.x), ( sPixId.t + viewId.t*renderSize.y/8.0 )/renderSize.y+ 1.0/(2.0*renderSize.y) ); \n" +
-            "vec4 p   = texture2D( texture, id );\n" +
-            "float pb = amplitude * ( p.r + p.g + p.b ) / 3.0;\n" +
-            "return pb;\n" +
-            "}\n" +
-        "void main(void) {						\n" +
-            "vec2 pixelCoord = vec2( floor((vUv.s)*renderSize.x), floor(vUv.t*renderSize.y) ); " +
-            "pixelCoord      = vec2(max(pixelCoord.s - 0.0, 0.0), max(pixelCoord.t - 0.0, 0.0));" +
-            "vec2 viewId     = vec2(   mod(pixelCoord.s,8.0)  ,   mod(pixelCoord.t,8.0)  ); " +
-            "vec2 sPixId     = vec2( floor(pixelCoord.s/8.0)  , floor(pixelCoord.t/8.0)  ); " +
-            //"vec2 sPixId     = vec2(   mod(pixelCoord.s, 200.0)  ,   mod(pixelCoord.t, 150.0)  ); " +
-            //"vec2 viewId     = vec2( floor(pixelCoord.s/200.0)  , floor(pixelCoord.t/150.0)  ); " +
-            "float fc        = 0.0;" +
-            "fc = getPixel( 1.0, tNormalViews, viewId, sPixId);" +
-            "fc = 1.0 - fc;" +
-            "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
-        "}";
-        var _SuperSampleSwizzleFragmentShaderSrc =
-        "precision highp float;" +
-        "varying  vec2 vUv; 			\n" +
-        "uniform sampler2D tNormalViews; 			\n" +
-        "uniform sampler2D tSuperX; 			\n" +
-        "uniform sampler2D tSuperY; 			\n" +
-        "uniform sampler2D tSuperD; 			\n" +
-        "uniform vec2 renderSize;              \n " +
-        "float getPixel( in float amplitude, in sampler2D texture, in vec2 viewId, in vec2 sPixId) {  \n" +
-            "vec2 id  = vec2( ( sPixId.s + viewId.s*renderSize.x/8.0 )/renderSize.x + 1.0/(2.0*renderSize.x), ( sPixId.t + viewId.t*renderSize.y/8.0 )/renderSize.y+ 1.0/(2.0*renderSize.y) ); \n" +
-            "vec4 p   = texture2D( texture, id );\n" +
-            "float pb = amplitude * ( p.r + p.g + p.b ) / 3.0;\n" +
-            "return pb;\n" +
-            "}\n" +
-        "void main(void) {						\n" +
-            "vec2 pixelCoord = vec2( floor((vUv.s)*renderSize.x), floor(vUv.t*renderSize.y) ); " +
-            "pixelCoord      = vec2(max(pixelCoord.s - 0.0, 0.0), max(pixelCoord.t - 0.0, 0.0));" +
-            "vec2 viewId     = vec2(   mod(pixelCoord.s,8.0)  ,   mod(pixelCoord.t,8.0)  ); " +
-            "vec2 sPixId     = vec2( floor(pixelCoord.s/8.0)  , floor(pixelCoord.t/8.0)  ); " +
-            //"vec2 sPixId     = vec2(   mod(pixelCoord.s, 200.0)  ,   mod(pixelCoord.t, 150.0)  ); " +
-            //"vec2 viewId     = vec2( floor(pixelCoord.s/200.0)  , floor(pixelCoord.t/150.0)  ); " +
-            "float fc        = 0.0;" +
-            "fc = getPixel( 1.0, tNormalViews, viewId, sPixId);" +
-            "float imgCoeff = 1.0;" +
-            "float nnCoeff = 0.2;" +
-            "float nxnCoeff = 0.1;" +
-            "float coeff = imgCoeff+2.0*nnCoeff+nxnCoeff;" +
-            "fc = getPixel(imgCoeff, tNormalViews, viewId, sPixId);" +
-            "fc = fc+getPixel( nnCoeff, tSuperX, viewId, sPixId );" +
-            "fc = fc+getPixel( nnCoeff, tSuperY, viewId, sPixId );" +
-            "fc = fc+getPixel( nxnCoeff, tSuperD, viewId, sPixId );" +
-            "if (viewId.s > 0.0) { \n" +
-            "   coeff = coeff + nnCoeff + nxnCoeff;" +
-            "   fc = fc+getPixel( nnCoeff, tSuperX, viewId-vec2(1.0, 0.0), sPixId );" +
-            "   fc = fc+getPixel( nxnCoeff, tSuperD, viewId-vec2(1.0, 0.0), sPixId );" +
-            "}\n" +
-            "if (viewId.t > 0.0) { \n" +
-            "   coeff = coeff + nnCoeff + nxnCoeff;" +
-            "   fc = fc+getPixel( nnCoeff, tSuperY, viewId-vec2(0.0, 1.0), sPixId );" +
-            "   fc = fc+getPixel( nxnCoeff, tSuperD, viewId-vec2(0.0, 1.0), sPixId );" +
-            "   if (viewId.s > 0.0) { \n" +
-            "       coeff = coeff + nxnCoeff;" +
-            "       fc = fc+getPixel( nxnCoeff, tSuperD, viewId-vec2(1.0, 1.0), sPixId );" +
-            "   }\n" +
-            "}\n" +
-            "fc = fc/coeff;" +
-            "fc = 1.0 - fc;" +
-            "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
-        "}";
-
-        var invA = [1.1146, -0.1909, 0.0343, 0.0, 0.0, 0.0];
-        var _SharpenSwizzleFragmentShaderSrc =
-        "precision highp float;" +
-        "varying  vec2 vUv; 			\n" +
-        "uniform sampler2D tNormalViews; 			\n" +
-        "uniform vec2 renderSize;              \n " +
-        "float getPixel( in float amplitude, in sampler2D texture, in vec2 viewId, in vec2 sPixId) {  \n" +
-            "vec2 id  = vec2( ( sPixId.s + viewId.s*renderSize.x/8.0 )/renderSize.x + 1.0/(2.0*renderSize.x), ( sPixId.t + viewId.t*renderSize.y/8.0 )/renderSize.y+ 1.0/(2.0*renderSize.y) ); \n" +
-            "vec4 p   = texture2D( texture, id );\n" +
-            "float pb = amplitude * ( p.r + p.g + p.b ) / 3.0;\n" +
-            "return pb;\n" +
-            "}\n" +
-         LEIA_internal_fragmentShaderFunction_getSharpPixel5() +
-        "void main(void) {						\n" +
-            "vec2 pixelCoord = vec2( floor((vUv.s)*renderSize.x), floor(vUv.t*renderSize.y) ); " +
-            "pixelCoord      = vec2(max(pixelCoord.s - 0.0, 0.0), max(pixelCoord.t - 0.0, 0.0));" +
-            "vec2 viewId     = vec2(   mod(pixelCoord.s,8.0)  ,   mod(pixelCoord.t,8.0)  ); " +
-            "vec2 sPixId     = vec2( floor(pixelCoord.s/8.0)  , floor(pixelCoord.t/8.0)  ); " +
-            //"vec2 sPixId     = vec2(   mod(pixelCoord.s, 200.0)  ,   mod(pixelCoord.t, 150.0)  ); " +
-            //"vec2 viewId     = vec2( floor(pixelCoord.s/200.0)  , floor(pixelCoord.t/150.0)  ); " +
-            "float fc        = 0.0;" +
-            "fc = getSharpPixel( invA, tNormalViews, viewId, sPixId);\n" +
-            "fc = 1.0 - fc;" +
-            "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
-        "}";
-        function LEIA_internal_fragmentShaderFunction_getSharpPixel5() {
-            var snipplet;
-            var B1X = 8.0 - 1.0;
-            var B1Y = 8.0 - 1.0;
-            var B2X = 8.0 - 2.0;
-            var B2Y = 8.0 - 2.0;
-            snipplet = "uniform float invA [6]; \n";
-            snipplet += (false) ? "vec4" : "float";
-            snipplet += " getSharpPixel( in float amplitudes [6], in sampler2D texture, in vec2 viewId, in vec2 sPixId) { \n";
-            snipplet += "    ";
-            snipplet += "    float s1m = viewId.s - 1.0;\n";
-            snipplet += "    float s1p = viewId.s + 1.0;\n";
-            snipplet += "    float t1m = viewId.t - 1.0;\n";
-            snipplet += "    float t1p = viewId.t + 1.0;\n";
-            snipplet += "    float s2m = viewId.s - 2.0;\n";
-            snipplet += "    float s2p = viewId.s + 2.0;\n";
-            snipplet += "    float t2m = viewId.t - 2.0;\n";
-            snipplet += "    float t2p = viewId.t + 2.0;\n";
-            snipplet += "    ";
-            snipplet += (false) ? "vec4" : "float";
-            snipplet += " p = getPixel( amplitudes[0], texture, viewId, sPixId);\n";
-            snipplet += "    float q = amplitudes[0];\n";
-            snipplet += "    if (viewId.s > 0.0) { \n";
-            snipplet += "        p += getPixel( amplitudes[1], texture, vec2( s1m, viewId.t ), sPixId );\n";
-            snipplet += "        q += amplitudes[1];\n";
-            snipplet += "        if (viewId.t > 0.0) { \n";
-            snipplet += "            p += getPixel( amplitudes[2], texture, vec2( s1m, t1m ), sPixId );\n";
-            snipplet += "            q += amplitudes[2];\n";
-            snipplet += "        }\n";
-            snipplet += "        if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
-            snipplet += "            p += getPixel( amplitudes[2], texture, vec2( s1m, t1p ), sPixId );\n";
-            snipplet += "            q += amplitudes[2];\n";
-            snipplet += "        }\n";
-            snipplet += "        if (viewId.s > 1.0) { \n";
-            snipplet += "            p += getPixel( amplitudes[3], texture, vec2( s2m, viewId.t ), sPixId );\n";
-            snipplet += "            q += amplitudes[3];\n";
-            snipplet += "            if (viewId.t > 0.0) { \n";
-            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s2m, t1m ), sPixId );\n";
-            snipplet += "                q += amplitudes[4];\n";
-            snipplet += "                if (viewId.t > 1.0) { \n";
-            snipplet += "                    p += getPixel( amplitudes[5], texture, vec2( s2m, t2m ), sPixId );\n";
-            snipplet += "                    q += amplitudes[5];\n";
-            snipplet += "                }\n";
-            snipplet += "            }\n";
-            snipplet += "            if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
-            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s2m, t1p ), sPixId );\n";
-            snipplet += "                q += amplitudes[4];\n";
-            snipplet += "                if (viewId.t < " + B2Y.toFixed(2) + ") { \n";
-            snipplet += "                    p += getPixel( amplitudes[5], texture, vec2( s2m, t2p ), sPixId );\n";
-            snipplet += "                    q += amplitudes[5];\n";
-            snipplet += "                }\n";
-            snipplet += "            }\n";
-            snipplet += "        }\n";
-            snipplet += "    }\n";
-            snipplet += "    if (viewId.t > 0.0) { \n";
-            snipplet += "        p += getPixel( amplitudes[1], texture, vec2( viewId.s, t1m ), sPixId );\n";
-            snipplet += "        q += amplitudes[1];\n";
-            snipplet += "        if (viewId.t > 1.0) { \n";
-            snipplet += "            p += getPixel( amplitudes[3], texture, vec2( viewId.s, t2m ), sPixId );\n";
-            snipplet += "            q += amplitudes[3];\n";
-            snipplet += "            if (viewId.s > 0.0) { \n";
-            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s1m, t2m ), sPixId );\n";
-            snipplet += "                q += amplitudes[4];\n";
-            snipplet += "            }\n";
-            snipplet += "            if (viewId.s < " + B1X.toFixed(1) + ") { \n";
-            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s1p, t2m ), sPixId );\n";
-            snipplet += "                q += amplitudes[4];\n";
-            snipplet += "            }\n";
-            snipplet += "        }\n";
-            snipplet += "    }\n";
-            snipplet += "    if (viewId.s < " + B1X.toFixed(1) + ") { \n";
-            snipplet += "        p += getPixel( amplitudes[1], texture, vec2( s1p, viewId.t ), sPixId );\n";
-            snipplet += "        q += amplitudes[1];\n";
-            snipplet += "        if (viewId.t > 0.0) { \n";
-            snipplet += "            p += getPixel( amplitudes[2], texture, vec2( s1p, t1m ), sPixId );\n";
-            snipplet += "            q += amplitudes[2];\n";
-            snipplet += "        }\n";
-            snipplet += "        if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
-            snipplet += "            p += getPixel( amplitudes[2], texture, vec2( s1p, t1p ), sPixId );\n";
-            snipplet += "            q += amplitudes[2];\n";
-            snipplet += "        }\n";
-            snipplet += "        if (viewId.s < " + B2X.toFixed(1) + ") { \n";
-            snipplet += "            p += getPixel( amplitudes[3], texture, vec2( s2p, viewId.t ), sPixId );\n";
-            snipplet += "            q += amplitudes[3];\n";
-            snipplet += "            if (viewId.t > 0.0) { \n";
-            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s2p, t1m ), sPixId );\n";
-            snipplet += "                q += amplitudes[4];\n";
-            snipplet += "                if (viewId.t > 1.0) { \n";
-            snipplet += "                    p += getPixel( amplitudes[5], texture, vec2( s2p, t2m ), sPixId );\n";
-            snipplet += "                    q += amplitudes[5];\n";
-            snipplet += "                }\n";
-            snipplet += "            }\n";
-            snipplet += "            if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
-            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s2p, t1p ), sPixId );\n";
-            snipplet += "                q += amplitudes[4];\n";
-            snipplet += "                if (viewId.t < " + B2Y.toFixed(2) + ") { \n";
-            snipplet += "                    p += getPixel( amplitudes[5], texture, vec2( s2p, t2p ), sPixId );\n";
-            snipplet += "                    q += amplitudes[5];\n";
-            snipplet += "                }\n";
-            snipplet += "            }\n";
-            snipplet += "        }\n";
-            snipplet += "    }\n";
-            snipplet += "    if (viewId.t < " + B1Y.toFixed(1) + ") { \n";
-            snipplet += "        p += getPixel( amplitudes[1], texture, vec2( viewId.s, t1p ), sPixId );\n";
-            snipplet += "        q += amplitudes[1];\n";
-            snipplet += "        if (viewId.t < " + B2Y.toFixed(1) + ") { \n";
-            snipplet += "            p += getPixel( amplitudes[3], texture, vec2( viewId.s, t2p ), sPixId );\n";
-            snipplet += "            q += amplitudes[3];\n";
-            snipplet += "            if (viewId.s > 0.0) { \n";
-            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s1m, t2p ), sPixId );\n";
-            snipplet += "                q += amplitudes[4];\n";
-            snipplet += "            }\n";
-            snipplet += "            if (viewId.s < " + B1X.toFixed(1) + ") { \n";
-            snipplet += "                p += getPixel( amplitudes[4], texture, vec2( s1p, t2p ), sPixId );\n";
-            snipplet += "                q += amplitudes[4];\n";
-            snipplet += "            }\n";
-            snipplet += "        }\n";
-            snipplet += "    }\n";
-            snipplet += "    p *= (1.0/q);\n";
-            snipplet += "    return(p);\n";
-            snipplet += "}\n";
-            return snipplet;
-        }
-
-        // member func
-        this.useBasicSwizzleShader = function () {
-            this._swizzleRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
-            this._swizzleRenderTarget.generateMipmaps = false;
-                this.matBasic = new THREE.ShaderMaterial({
-                    uniforms: {
-                        "tNormalViews": { type: "t", value: this._swizzleRenderTarget },
-                        "renderSize": { type: "v2", value: new THREE.Vector2(this.width, this.height) }
-                    },
-                    vertexShader: _SwizzleVertexShaderSrc,
-                    fragmentShader: _SwizzleFragmentShaderSrc,
-                    depthWrite: false
-                });
-            this.materialSwizzle = this.matBasic;
-        };
-        this.useSuperSampleSwizzleShader = function () {
-            this._swizzleRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
-            this._swizzleRenderTargetSftX = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
-            this._swizzleRenderTargetSftY = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
-            this._swizzleRenderTargetSftXY = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
-            this._swizzleRenderTarget.generateMipmaps = false; this._swizzleRenderTargetSftX.generateMipmaps = false;
-            this._swizzleRenderTargetSftY.generateMipmaps = false; this._swizzleRenderTargetSftXY.generateMipmaps = false;
-                this.matSuperSample = new THREE.ShaderMaterial({
-                    uniforms: {
-                        "tNormalViews": { type: "t", value: this._swizzleRenderTarget },
-                        "tSuperX": { type: "t", value: this._swizzleRenderTargetSftX },
-                        "tSuperY": { type: "t", value: this._swizzleRenderTargetSftY },
-                        "tSuperD": { type: "t", value: this._swizzleRenderTargetSftXY },
-                        "fader": { type: "f", value: 1.0 },
-                        "renderSize": { type: "v2", value: new THREE.Vector2(this.width, this.height) }
-                    },
-                    vertexShader: _SwizzleVertexShaderSrc,
-                    fragmentShader: _SuperSampleSwizzleFragmentShaderSrc,
-                    depthWrite: false
-                });
-            this.materialSwizzle = this.matSuperSample;
-        };
-        this.useSharpenSwizzleShader = function () {
-            this._swizzleRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat });
-            this._swizzleRenderTarget.generateMipmaps = false;
-            this.matSharpen = new THREE.ShaderMaterial({
-                uniforms: {
-                    "tNormalViews": { type: "t", value: this._swizzleRenderTarget },
-                    "fader"		: { type: "f", value:1.0},
-                    "invA"		: { type: "fv1", value: invA },
-                    "renderSize": { type: "v2", value: new THREE.Vector2(this.width, this.height) }
-                },
-                vertexShader: _SwizzleVertexShaderSrc,
-                fragmentShader: _SharpenSwizzleFragmentShaderSrc,
-                depthWrite: false
-            });
-            this.materialSwizzle = this.matSharpen;
-        }
-
-        //choose shaders to use
-        switch (_that.nShaderMode) {
-            case 0: this.useBasicSwizzleShader(); break;
-            case 1: this.useSharpenSwizzleShader(); break;
-            case 2: this.useSuperSampleSwizzleShader(); break;
-            default:
-                this.useBasicSwizzleShader();
-        }
-        this.swizzleMesh = new THREE.Mesh(swizzleBackgroundGeometry, this.materialSwizzle);
-        this.LEIA_output.add(this.swizzleMesh);
-
-        this.changeSzie = function (w, h) {
-            this.width = w;
-            this.height = h;
-            this.cameraSWIZZLE = new THREE.OrthographicCamera(this.width / -2, this.width / 2, this.height / 2, this.height / -2, -1, 1);
-            this.cameraSWIZZLE.position.z = 0;
-            if (this.LEIA_output.children.length > 0) this.LEIA_output.remove(this.swizzleMesh);
-            var swizzleBackgroundGeometry = new THREE.PlaneGeometry(this.width, this.height);
-
-            switch (_that.nShaderMode) {
-                case 0: this.useBasicSwizzleShader(); break;
-                case 1: this.useSharpenSwizzleShader(); break;
-                case 2: this.useSuperSampleSwizzleShader(); break;
-                default:
-                    this.useBasicSwizzleShader();
-            }
-            this.swizzleMesh = new THREE.Mesh(swizzleBackgroundGeometry, this.materialSwizzle);
-            this.LEIA_output.add(this.swizzleMesh);
-        };
-
-
-        // call back
-        document.addEventListener('keydown', onDocumentKeyDown, false);
-        function onDocumentKeyDown(event) {
-            var keyCode = event.which;
-            //console.log(keyCode);
-            switch (keyCode) {
-                case 83: // 's'
-                    //_that.bSuperSample = !_that.bSuperSample;
-                    _that.nShaderMode++;
-                    _that.nShaderMode = _that.nShaderMode % 3;
-                    if (_that._shaderManager != undefined) {
-                        switch (_that.nShaderMode) {
-                            case 0: _that._shaderManager.useBasicSwizzleShader(); _that._shaderManager.LEIA_output.children[0].material = _that._shaderManager.matBasic; break;
-                            case 1: _that._shaderManager.useSharpenSwizzleShader(); _that._shaderManager.LEIA_output.children[0].material = _that._shaderManager.matSharpen; break;
-                            case 2: _that._shaderManager.useSuperSampleSwizzleShader(); _that._shaderManager.LEIA_output.children[0].material = _that._shaderManager.matSuperSample; break;
-                            //default:
-                            //    _that._shaderManager.useBasicSwizzleShader(); _that._shaderManager.LEIA_output.children[0].material = _that._shaderManager.matBasic;
-                        }
-                    }
-                    break;
-            }
-        }
-    }
-    // shaders end
-    
-    this.getCameraPosition = function (position, targetPosition, up, npart, xIndex, yIndex, Gradient, EachTarPos, spanMode, shiftX, shiftY) {
-        if (position.x == 0 && position.y != 0 && position.z == 0) {
-            position.z = position.y / 100;
-        }
-        var scale = this.view64fov / (npart - 1);
-        var mat20, mat21, mat22;
-        var v0, v1, v2;
-        v0 = mat20 = position.x - targetPosition.x;
-        v1 = mat21 = position.y - targetPosition.y;
-        v2 = mat22 = position.z - targetPosition.z;
-        var len = Math.sqrt(mat20 * mat20 + mat21 * mat21 + mat22 * mat22);
-        mat20 /= len;
-        mat21 /= len;
-        mat22 /= len;
-        var mat00, mat01, mat02;
-        mat00 = mat22;
-        mat01 = 0;
-        mat02 = -mat20;
-        if (v1 > 0 && v1 >= Math.abs(v0) * 2 && v1 >= Math.abs(v2) * 2) {
-            mat00 = mat21;
-            mat01 = -mat20;
-            mat02 = 0;
-        }
-        len = Math.sqrt(mat00 * mat00 + mat02 * mat02);
-        mat00 /= len;
-        mat01 /= len;
-        mat02 /= len;
-        var mat10, mat11, mat12;
-        mat10 = mat21 * mat02;
-        mat11 = mat22 * mat00 - mat20 * mat02;
-        mat12 = -mat21 * mat00;
-        len = Math.sqrt(mat10 * mat10 + mat11 * mat11 + mat12 * mat12);
-        mat10 /= len;
-        mat11 /= len;
-        mat12 /= len;
-
-        // baseline
-        len = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2);
-        var halfRange = Math.tan(THREE.Math.degToRad(3.5 * scale)) * len;
-        var baseLine = halfRange / 3.5;
-
-        // add cam here
-        if (shiftX == undefined)
-            shiftX = 0;
-        if (shiftY == undefined)
-            shiftY = 0;
-        var curX = xIndex - 3.5 + shiftX;
-        var curY = yIndex - 3.5 + shiftY;
-        //var curXAng = curY * scale;
-        //var curYAng = curX * scale;
-        var curXRange = curY * baseLine;
-        var curYRange = curX * baseLine;
-        var curXAng = THREE.Math.radToDeg(Math.atan(curXRange / len) );
-        var curYAng = THREE.Math.radToDeg(Math.atan(curYRange / len) );
-
-        len = v0 * v0 + v1 * v1 + v2 * v2;
-        var phi = curYAng;
-        var alpha = curXAng;
-        var u0, u1, u2;
-        var theta = 90 - Math.atan(Math.tan(THREE.Math.degToRad(alpha)) * Math.cos(THREE.Math.degToRad(phi))) * 180 / Math.PI;
-        u0 = Math.sqrt(len) * Math.sin(THREE.Math.degToRad(theta)) * Math.sin(THREE.Math.degToRad(phi));
-        u1 = Math.sqrt(len) * Math.cos(THREE.Math.degToRad(theta));
-        u2 = Math.sqrt(len) * Math.sin(THREE.Math.degToRad(theta)) * Math.cos(THREE.Math.degToRad(phi));
-        if (!spanMode) {
-            u0 = Math.sqrt(len) * Math.tan(THREE.Math.degToRad(phi));;
-            u1 = Math.sqrt(len) / (Math.tan(THREE.Math.degToRad(theta)) * Math.cos(THREE.Math.degToRad(phi)));;
-            u2 = Math.sqrt(len);
-        }
-        var s0, s1, s2;
-        s0 = Math.sqrt(len) * Math.sin(THREE.Math.degToRad(theta) - 1.0) * Math.sin(THREE.Math.degToRad(phi));
-        s1 = Math.sqrt(len) * Math.cos(THREE.Math.degToRad(theta) - 1.0);
-        s2 = Math.sqrt(len) * Math.sin(THREE.Math.degToRad(theta) - 1.0) * Math.cos(THREE.Math.degToRad(phi));
-        var t0, t1, t2;
-        t0 = mat00 * s0 + mat10 * s1 + mat20 * s2 + targetPosition.x;
-        t1 = mat11 * s1 + mat21 * s2 + targetPosition.y;
-        t2 = mat02 * s0 + mat12 * s1 + mat22 * s2 + targetPosition.z;
-        Gradient.x = t0;
-        Gradient.y = t1;
-        Gradient.z = t2;
-        var w0, w1, w2;
-        w0 = mat00 * u0 + mat10 * u1 + mat20 * u2 + targetPosition.x;
-        w1 = mat11 * u1 + mat21 * u2 + targetPosition.y;
-        w2 = mat02 * u0 + mat12 * u1 + mat22 * u2 + targetPosition.z;
-        var outPosition = new THREE.Vector3();
-        outPosition.x = w0;
-        outPosition.y = w1;
-        outPosition.z = w2;
-        var _eachTarPos = new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z);
-        _eachTarPos.add(outPosition.clone().sub(position));
-        EachTarPos.copy(_eachTarPos);
-
-        return outPosition;
-    }
-    this.getCameraIntrinsic = function (camera, _tarObj) {
-        var _local_lrbt = [];
-        for (var i = 0; i < 4; i++) {
-            var point = new THREE.Vector3();
-            _local_lrbt.push(point);
-        }
-       // if (screen[0] !== undefined) {
-            var camMat = new THREE.Matrix4();
-            camMat.getInverse(camera.matrix);
-            camMat.multiply(_tarObj.matrix);
-
-            for (var i = 0; i < 4; i++) {
-               // _local_lrbt[i].copy(screen[i]);
-                var __point = new THREE.Vector3(_tarObj.geometry.vertices[i].x, _tarObj.geometry.vertices[i].y, _tarObj.geometry.vertices[i].z);
-                _local_lrbt[i].copy(__point);
-            }
-            for (var i = 0; i < 4; i++) {
-                _local_lrbt[i].applyMatrix4(camMat);
-            }
-      //  }
-        var n = camera.near;
-        var f = camera.far;
-        var d = 0;
-        if (_local_lrbt[0] !== undefined) {
-            var r = _local_lrbt[3].x;
-            var l = _local_lrbt[2].x;
-            var t = _local_lrbt[1].y;
-            var b = _local_lrbt[3].y;
-            d = -1 * _local_lrbt[3].z;
-            var m11 = 2 * d / (r - l); var m12 = 0;               var m13 = (r + l) / (r - l); var m14 = 0;
-            var m21 = 0;               var m22 = 2 * d / (t - b); var m23 = (t + b) / (t - b); var m24 = 0;
-            var m31 = 0;               var m32 = 0;               var m33 = (f + n) / (n - f); var m34 = 2 * f * n / (n - f);
-            var m41 = 0;               var m42 = 0;               var m43 = -1;                var m44 = 0;
-            camera.projectionMatrix.set(m11, m12, m13, m14,
-                                        m21, m22, m23, m24,
-                                        m31, m32, m33, m34,
-                                        m41, m42, m43, m44);
-        }
-
-        camera.near = d * 0.6;
-        camera.far = d * 3;
-        return d;
-    }
-
-    // Global view interaction, Gyro simulation signal generator&visual indicator, and MultiView Rendering
-    // global view
-    
-    this._holoScreen = undefined;
-    this.bHoloScreenInit = false;
-    var CHoloScreen = function (camera, _scale) {
-        this.position = new THREE.Vector3(0, 0, 0);
-        this.position.copy(camera.targetPosition);
-        this.scale = _scale;
-
-        var __point = new THREE.Vector3();
-        __point.copy(camera.position.clone().sub(camera.targetPosition));
-        var _length = __point.length() / 2;
-        var geoTarRect = new THREE.PlaneGeometry(1 * _length * 4, 1 * _length *3, 1, 1);
-        var matTarRect = new THREE.MeshBasicMaterial({ color: 0x0066aa, transparent: true, opacity: 0.2 });//0x4BD121
-        matTarRect.side = THREE.DoubleSide;
-        this.tarObj = new THREE.Mesh(geoTarRect, matTarRect);
-        this.tarObj.name = "tarPlane";
-        this.tarObj.visible = true;
-        this.tarObj.rotation.setFromRotationMatrix(camera.matrix);
-        this.tarObj.position.set(this.position.x, this.position.y, this.position.z);
-        this.tarObj.scale.x = this.scale;
-        this.tarObj.scale.y = this.scale;
-        this.tarObj.scale.z = this.scale;
-        this.tarObj.updateMatrix();
-
-        this.update = function () {
-            this.position.copy(this.tarObj.position);
-            this.scale = this.tarObj.scale.x;
-            this.tarObj.rotation.setFromRotationMatrix(camera.matrix);
-        }
-    }
-
-    this._holoCamCenter = undefined;
-    this.bHoloCamCenterInit = false;
-    var CHoloCamCenter = function (camera) {
-        this.position = new THREE.Vector3();
-        this.position.copy(camera.position);
-        this.scale = 1;
-
-        var __point = new THREE.Vector3();
-        __point.copy(camera.position.clone().sub(camera.targetPosition));
-        var _length = __point.length() / 2;
-        var EyeCenterSize = _length / 80;
-        var geoEyeCenter = new THREE.SphereGeometry(EyeCenterSize, 32, 32);
-        var matEyeCenter = new THREE.MeshBasicMaterial({ color: 0xff00ff, transparent: false, opacity: 0.8 });//0x4BD121
-        this.eyeCenter = new THREE.Mesh(geoEyeCenter, matEyeCenter);
-        this.eyeCenter.position.set(this.position.x, this.position.y, this.position.z);
-        this.eyeCenter.name = "eyeCenter";
-        this.eyeCenter.visible = true;
-        this.eyeCenter.updateMatrix();
-
-        this.update = function () {
-            this.position.copy(camera.position);
-        }
-    }
-
-    this.bGlobalViewInit = false;
-    var _globalView;
-    var CGlobalView = function (camera, scene, renderTarget, forceClear) {
-        var _this = this;
-        var npart = 8;
-        this.camMeshs64 = [];
-        this.ObjMesh2 = [];
-        this.Gcamera = new THREE.PerspectiveCamera(90, _canvas.width / _canvas.height, 0.01, 40000);
-
-        this.init = function () {
-            var vecCend = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
-            var vecGT = new THREE.Vector3((camera.position.x + camera.targetPosition.x) / 2, (camera.position.y + camera.targetPosition.y) / 2, (camera.position.z + camera.targetPosition.z) / 2);
-            vecCend.x -= vecGT.x;
-            vecCend.y -= vecGT.y;
-            vecCend.z -= vecGT.z;
-            var vecUp = new THREE.Vector3(0, -vecCend.z, vecCend.y);
-            var lengthVecUp = Math.sqrt(vecUp.x * vecUp.x + vecUp.y * vecUp.y + vecUp.z * vecUp.z);
-            vecUp.x /= lengthVecUp;
-            vecUp.y /= lengthVecUp;
-            vecUp.z /= lengthVecUp;
-            var __length = Math.sqrt(vecCend.x * vecCend.x + vecCend.y * vecCend.y + vecCend.z * vecCend.z);
-            vecUp.x = vecUp.x * 2 * __length + vecGT.x;
-            vecUp.y = vecUp.y * 2 * __length + vecGT.y;
-            vecUp.z = vecUp.z * 2 * __length + vecGT.z;
-            this.Gcamera = new THREE.PerspectiveCamera(90, _canvas.width / _canvas.height, 0.01, 40000);
-            this.Gcamera.position.x = vecUp.x;
-            this.Gcamera.position.y = vecUp.y;
-            this.Gcamera.position.z = vecUp.z;
-            this.Gcamera.up.x = vecCend.x;
-            this.Gcamera.up.y = vecCend.y;
-            this.Gcamera.up.z = vecCend.z;
-            this.Gcamera.lookAt(new THREE.Vector3(vecGT.x, vecGT.y, vecGT.z));
-            _this.LocalControls = new drapControls(_this.Gcamera);
-            _this.camControls = new pickControls(_this.Gcamera, undefined, __length / 5);
-            _this.tarControls = new pickControls(_this.Gcamera, undefined, __length / 2.5);
-            // add virtual cams
-            var camGeometry = new THREE.CylinderGeometry(0, __length / 40, __length / 20, 20);
-            camGeometry.applyMatrix(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(Math.PI / 2, Math.PI, 0)));
-            var camMaterial = new THREE.MeshNormalMaterial();
-            var bHasCam = false;
-            var obj, subObj, tarId;
-            for (var i = 0, l = scene.children.length; i < l; i++) {
-                obj = scene.children[i];
-                if (obj == camera) {
-                    bHasCam = true;
-                }
-            }
-            if (!bHasCam) {
-                for (var i = 0, l = scene.children.length; i < l; i++) {
-                    obj = scene.children[i];
-                    for (var j = 0, l = obj.children.length; j < l; j++) {
-                        subObj = obj.children[j];
-                        if (subObj == camera) {
-                            tarId = j;
-                        }
-                    }
-                }
-            }
-            for (var i = 0; i < npart; i++)
-                for (var j = 0; j < npart; j++) {
-                    var mesh = new THREE.Mesh(camGeometry, camMaterial);
-                    var Gradient = new THREE.Vector3();
-                    var EachTarPos = new THREE.Vector3();
-                    var meshPosition = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode);
-                    mesh.position.x = meshPosition.x;
-                    mesh.position.y = meshPosition.y;
-                    mesh.position.z = meshPosition.z;
-                    mesh.lookAt(EachTarPos);
-                    this.camMeshs64.push(mesh);
-                    if (bHasCam || tarId == undefined)
-                        scene.add(mesh);
-                    else
-                        scene.children[tarId].add(mesh);
-                   
-                    var meshSX = mesh.clone();
-                    var meshPosSX = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0.5, 0);
-                    meshSX.position.x = meshPosSX.x;
-                    meshSX.position.y = meshPosSX.y;
-                    meshSX.position.z = meshPosSX.z;
-                    meshSX.lookAt(EachTarPos);
-                    this.camMeshs64.push(meshSX);
-                    var meshSY = mesh.clone();
-                    var meshPosSY = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0, -0.5);
-                    meshSY.position.x = meshPosSY.x;
-                    meshSY.position.y = meshPosSY.y;
-                    meshSY.position.z = meshPosSY.z;
-                    meshSY.lookAt(EachTarPos);
-                    this.camMeshs64.push(meshSY);
-                    var meshSXY = mesh.clone();
-                    var meshPosSXY = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0.5, -0.5);
-                    meshSXY.position.x = meshPosSXY.x;
-                    meshSXY.position.y = meshPosSXY.y;
-                    meshSXY.position.z = meshPosSXY.z;
-                    meshSXY.lookAt(EachTarPos);
-                    this.camMeshs64.push(meshSXY);
-                    if (bHasCam || tarId == undefined) {
-                        scene.add(meshSX);
-                        scene.add(meshSY);
-                        scene.add(meshSXY);
-                    }
-                    else {
-                        scene.children[tarId].add(meshSX);
-                        scene.children[tarId].add(meshSY);
-                        scene.children[tarId].add(meshSXY);
-                    }
-
-                    if (_that.nShaderMode!=2) {
-                        meshSX.visible = false;
-                        meshSY.visible = false;
-                        meshSXY.visible = false;
-                    }
-
-
-                }
-            //============
-            //this.ObjMesh2.push(EyeCenter);
-            this.ObjMesh2.push(_that._holoCamCenter.eyeCenter);
-            //this.ObjMesh2.push(tarRect2);
-            this.ObjMesh2.push(_that._holoScreen.tarObj);
-
-            this.camControls.attach(this.ObjMesh2[0], false);
-            this.tarControls.attach(this.ObjMesh2[1], false);
-            if (bHasCam || tarId == undefined) {
-                scene.add(this.ObjMesh2[0]);
-                scene.add(this.ObjMesh2[1]);
-                scene.add(this.camControls);
-                scene.add(this.tarControls);
-            } else {
-                scene.children[tarId].add(this.ObjMesh2[0]);
-                scene.children[tarId].add(this.ObjMesh2[1]);
-                scene.children[tarId].add(this.camControls);
-                scene.children[tarId].add(this.tarControls);
-            }
-            //============
-        }
-        this.init();
-
-        this.update = function () {
-            var _left = Math.floor(_canvas.width * _that.GObserveView.left);
-            var _bottom = Math.floor(_canvas.height * _that.GObserveView.bottom);
-            var _width = Math.floor(_canvas.width * _that.GObserveView.width);
-            var _height = Math.floor(_canvas.height * _that.GObserveView.height);
-            _that.setViewport(_left, _bottom, _width, _height);
-            _that.setScissor(_left, _bottom, _width, _height);
-            _that.enableScissorTest(true);
-            _that.setClearColor(new THREE.Color().setRGB(0.11, 0.12, 0.18));
-            this.Gcamera.aspect = _width / _height;
-            this.Gcamera.updateProjectionMatrix();
-            for (var i = 0; i < npart; i++)
-                for (var j = 0; j < npart; j++) {
-                    var Gradient = new THREE.Vector3();
-                    var EachTarPos = new THREE.Vector3();
-                    if (_that.nShaderMode!=2) {
-                        var meshPosition = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode);
-                        this.camMeshs64[(i * npart + j) * 4 + 0].position.x = meshPosition.x;
-                        this.camMeshs64[(i * npart + j) * 4 + 0].position.y = meshPosition.y;
-                        this.camMeshs64[(i * npart + j) * 4 + 0].position.z = meshPosition.z;
-                        this.camMeshs64[(i * npart + j) * 4 + 0].lookAt(EachTarPos);
-                        this.camMeshs64[(i * npart + j) * 4 + 1].visible = false;
-                        this.camMeshs64[(i * npart + j) * 4 + 2].visible = false;
-                        this.camMeshs64[(i * npart + j) * 4 + 3].visible = false;
-                    }else {
-                       // this.camMeshs64[(i * npart + j) * 4 + 0].visible = true;
-                        this.camMeshs64[(i * npart + j) * 4 + 1].visible = true;
-                        this.camMeshs64[(i * npart + j) * 4 + 2].visible = true;
-                        this.camMeshs64[(i * npart + j) * 4 + 3].visible = true;
-                        var meshPosition = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode);
-                        this.camMeshs64[(i * npart + j) * 4 + 0].position.x = meshPosition.x;
-                        this.camMeshs64[(i * npart + j) * 4 + 0].position.y = meshPosition.y;
-                        this.camMeshs64[(i * npart + j) * 4 + 0].position.z = meshPosition.z;
-                        this.camMeshs64[(i * npart + j) * 4 + 0].lookAt(EachTarPos);
-
-                        var meshPosSX = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0.5, 0);
-                        this.camMeshs64[(i * npart + j) * 4 + 1].position.x = meshPosSX.x;
-                        this.camMeshs64[(i * npart + j) * 4 + 1].position.y = meshPosSX.y;
-                        this.camMeshs64[(i * npart + j) * 4 + 1].position.z = meshPosSX.z;
-                        this.camMeshs64[(i * npart + j) * 4 + 1].lookAt(EachTarPos);
-
-                        var meshPosSY = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0, -0.5);
-                        this.camMeshs64[(i * npart + j) * 4 + 2].position.x = meshPosSY.x;
-                        this.camMeshs64[(i * npart + j) * 4 + 2].position.y = meshPosSY.y;
-                        this.camMeshs64[(i * npart + j) * 4 + 2].position.z = meshPosSY.z;
-                        this.camMeshs64[(i * npart + j) * 4 + 2].lookAt(EachTarPos);
-
-                        var meshPosSXY = _that.getCameraPosition(camera.position, camera.targetPosition, camera.up, npart, i, j, Gradient, EachTarPos, _that.spanSphereMode, 0.5, -0.5);
-                        this.camMeshs64[(i * npart + j) * 4 + 3].position.x = meshPosSXY.x;
-                        this.camMeshs64[(i * npart + j) * 4 + 3].position.y = meshPosSXY.y;
-                        this.camMeshs64[(i * npart + j) * 4 + 3].position.z = meshPosSXY.z;
-                        this.camMeshs64[(i * npart + j) * 4 + 3].lookAt(EachTarPos);
-                    }
-                }
-            this.LocalControls.enabled = true;
-            if (this.tarControls.axis != null || this.camControls.axis != null)
-                this.LocalControls.enabled = false;
-            this.LocalControls.update();
-            this.camControls.update();
-            this.tarControls.update();
-            camera.position.copy(this.camControls.object.position);
-            camera.targetPosition.copy(this.tarControls.object.position);
-            camera.lookAt(camera.targetPosition);
-
-            //_that._holoScreen.tarObj = this.tarControls.object;
-            //_that._holoScreen.tarObj.rotation.setFromRotationMatrix(camera.matrix);
-            _that._holoScreen.update();
-            _that._holoCamCenter.update();
-
-            if (_that.bGlobalView)
-                _that.render(scene, this.Gcamera, renderTarget, forceClear);
-        }
-        var lastBgView, lastBgyro;
-        if (_that.bHidePanels) {
-            lastBgView = _that.bGlobalView;
-            lastBgyro = _that.bGyroSimView;
-        }
-        document.addEventListener('keydown', onDocumentKeyDown, false);
-        function onDocumentKeyDown(event) {
-            var keyCode = event.which;
-            //console.log(keyCode);
-            switch (keyCode) {
-                case 27: // escape key
-                    //case 32: // ' '
-                case 71: // 'g'                
-                    _that.bHidePanels = !_that.bHidePanels;
-                    if (_that.bHidePanels) {
-                        lastBgView = _that.bGlobalView;
-                        lastBgyro = _that.bGyroSimView;
-                        _that.bGlobalView = false;
-                        _that.bGyroSimView = false;
-                    }
-                    if (!_that.bHidePanels) {
-                        _that.bGlobalView = lastBgView;
-                        _that.bGyroSimView = lastBgyro;
-                    }
-                    break;
-                case 82: // 'r'
-                    _that.bRendering = !_that.bRendering;
-                    break;
-            }
-        }
-    }
-    this.bHidePanels = false;
-    // Gyro simulation
-    this.bGyroSimViewInit = false;
-    var _gyroView;
-    var CGyroView = function (renderTarget, forceClear) {
-        this.init = function () {
-            this.GyroSimCam = new THREE.PerspectiveCamera(90, _canvas.width / _canvas.height, 0.01, 10000);
-            this.GyroSimCam.position.x = 0;
-            this.GyroSimCam.position.y = 0;
-            this.GyroSimCam.position.z = 20;
-            this.GyroSimCam.up.x = 0;
-            this.GyroSimCam.up.y = 1;
-            this.GyroSimCam.up.z = 0;
-
-            this.GyroSimScene = new THREE.Scene();
-            this.GyroSimCam.lookAt(this.GyroSimScene.position);
-            this.GyroSimScene.add(this.GyroSimCam);
-            var boxScale = 1;
-            var boxX = 10, boxY = 2, boxZ = 10;
-            var geoBox = new THREE.BoxGeometry(boxX * boxScale, boxY * boxScale, boxZ * boxScale);
-            var materBox = new THREE.MeshPhongMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.8, specular: 0xeeeeff, shininess: 20 });//0x4BD121
-            this.GyroBox = new THREE.Mesh(geoBox, materBox);
-            this.GyroSimScene.add(this.GyroBox);
-            this.localSim = new simulateGyro(this.GyroBox);
-            var light = new THREE.DirectionalLight(0xffffff);
-            light.position.set(0, 5, 5);
-            this.GyroSimScene.add(light);
-        }
-        this.init();
-        this.update = function () {
-            var _left = Math.floor(_canvas.width * _that.GGyroSimView.left);
-            var _bottom = Math.floor(_canvas.height * _that.GGyroSimView.bottom);
-            var _width = Math.floor(_canvas.width * _that.GGyroSimView.width);
-            var _height = Math.floor(_canvas.height * _that.GGyroSimView.height);
-            _that.setViewport(_left, _bottom, _width, _height);
-            _that.setScissor(_left, _bottom, _width, _height);
-            _that.enableScissorTest(true);
-            _that.setClearColor(new THREE.Color().setRGB(0.11, 0.12, 0.18));
-            this.GyroSimCam.aspect = _width / _height;
-            this.GyroSimCam.updateProjectionMatrix();
-            this.localSim.update();
-            _that.render(this.GyroSimScene, this.GyroSimCam, renderTarget, forceClear);
-        }
-    }
-        
-    // rendering
-    var Leia_compute_renderViews = function (scene, camera, renderTarget, forceClear, shiftX, shiftY) {
-        var spanMode = _that.spanSphereMode;
-        var camPositionCenter = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
-        var tmpM = new THREE.Matrix4();
-        var tmpV = new THREE.Vector3(camPositionCenter.x - camera.targetPosition.x, camPositionCenter.y - camera.targetPosition.y, camPositionCenter.z - camera.targetPosition.z);
-        var npart = 8;
-        var _d = 0;
-        if (shiftX == undefined)
-            shiftX = 0;
-        if (shiftY == undefined)
-            shiftY = 0;
-        for (var ii = 0; ii < npart; ii++)
-            for (var jj = 0; jj < npart; jj++) {
-                _that.setViewport(_canvas.width / npart * ii, _canvas.height / npart * jj, _canvas.width / npart, _canvas.height / npart);// debug shadow, modify _viewport*** here
-                _that.setScissor(_viewportWidth / npart * ii, _viewportHeight / npart * jj, _viewportWidth / npart, _viewportHeight / npart);
-                _that.enableScissorTest(true);
-                var Gradient = new THREE.Vector3();
-                var EachTarPos = new THREE.Vector3();
-                var camPosition = _that.getCameraPosition(camPositionCenter, camera.targetPosition, camera.up, npart, ii, jj, Gradient, EachTarPos, spanMode, shiftX, shiftY);
-                camera.position.x = camPosition.x;
-                camera.position.y = camPosition.y;
-                camera.position.z = camPosition.z;
-                tmpM.lookAt(camera.position, EachTarPos, camera.up);
-                camera.quaternion.setFromRotationMatrix(tmpM);
-                camera.updateMatrix();
-                if (_that._holoScreen.tarObj.geometry.vertices[0] !== undefined) {
-                    _d = _that.getCameraIntrinsic(camera, _that._holoScreen.tarObj);
-                }
-                //if (renderTarget == _swizzleRenderTarget || renderTarget == _swizzleRenderTargetSftX || renderTarget == _swizzleRenderTargetSftY || renderTarget == _swizzleRenderTargetSftXY) {
-                if (renderTarget !== undefined) {
-                    renderTarget.sx = _canvas.width / npart * ii;
-                    renderTarget.sy = _canvas.height / npart * jj;
-                    renderTarget.w = _canvas.width / npart;
-                    renderTarget.h = _canvas.height / npart;
-                }
-                _that.render(scene, camera, renderTarget, forceClear);
-            }
-        camera.position.x = camPositionCenter.x;
-        camera.position.y = camPositionCenter.y;
-        camera.position.z = camPositionCenter.z;
-        camera.up.set(0, 1, 0);
-        if (tmpV.y > 0 && tmpV.y >= Math.abs(tmpV.x) * 2 && tmpV.y >= Math.abs(tmpV.z) * 2) {
-            camera.up.set(0, 0, -1);
-        }
-        camera.lookAt(camera.targetPosition);
-    }
-
-    this.bRendering = true;
-    this.Leia_render = function (scene, camera, renderTarget, forceClear, holoScreenScale) {
-        if (this.bRendering) {
-            if (camera.position.x == 0 && camera.position.y != 0 && camera.position.z == 0)
-                camera.position.z = camera.position.y / 100;
-            var _holoScreenScale = 1;
-            if (holoScreenScale !== undefined)
-                _holoScreenScale = holoScreenScale;
-
-            //console.log(_viewportWidth, " ", _viewportWidth);
-            if (!this.bHoloCamCenterInit) {
-                this._holoCamCenter = new CHoloCamCenter(camera);
-                this.bHoloCamCenterInit = true;
-            }
-            if ((!this.bHoloScreenInit) && camera.position.length() >= 0) {
-                this._holoScreen = new CHoloScreen(camera, _holoScreenScale);
-                this.bHoloScreenInit = true;
-            }
-            if (!this.bShaderManInit) {
-                this._shaderManager = new CShaderManager();
-                this.bShaderManInit = true;
-            }
-            //this._renderMode = 0;
-
-            if (0 == this._renderMode) {
-                var spanMode = this.spanSphereMode;
-                var camPositionCenter = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
-                var tmpM = new THREE.Matrix4();
-                var tmpV = new THREE.Vector3(camPositionCenter.x - camera.targetPosition.x, camPositionCenter.y - camera.targetPosition.y, camPositionCenter.z - camera.targetPosition.z);
-                var _d = 0;
-                this.setViewport(0, 0, _canvas.width, _canvas.height);// debug shadow from _gl.viewport
-                this.setScissor(0, 0, _viewportWidth, _viewportHeight);
-                this.enableScissorTest(true);
-                camera.up.set(0, 1, 0);
-                if (tmpV.y > 0 && tmpV.y >= Math.abs(tmpV.x) * 2 && tmpV.y >= Math.abs(tmpV.z) * 2) {
-                    camera.up.set(0, 0, -1);
-                }
-                if (_that._holoScreen.tarObj.geometry.vertices[0] !== undefined) {
-                    _d = this.getCameraIntrinsic(camera, _that._holoScreen.tarObj);
-                }
-                this.render(scene, camera, renderTarget, forceClear);
-            } else if (1 == this._renderMode) {
-                console.log("render64");
-                Leia_compute_renderViews(scene, camera, renderTarget, forceClear);
-                if (this.nShaderMode==2) {
-                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.5, 0.0);
-                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.0, -0.5);
-                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.5, -0.5);
-                }
-            } else if (2 == this._renderMode) {
-                Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTarget, forceClear);
-                if (this.nShaderMode==2) {
-                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftX, forceClear, 0.5, 0.0);
-                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftY, forceClear, 0.0, -0.5);
-                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftXY, forceClear, 0.5, -0.5);
-                }
-
-                this.setViewport(0, 0, _canvas.width, _canvas.height);// debug shadow, modify _viewport*** here
-                this.setScissor(0, 0, _viewportWidth, _viewportHeight);
-                this.enableScissorTest(true);
-                renderer.render(this._shaderManager.LEIA_output, this._shaderManager.cameraSWIZZLE);
-            } else {
-                //mode error
-                console.log("renderMode error!");
-            }
-
-            // holo tuning panel  
-            //if (this.bGlobalView) {
-            if (!this.bGlobalViewInit) {
-                _globalView = new CGlobalView(camera, scene, renderTarget, forceClear);
-                this.bGlobalViewInit = true;
-                //_globalView.update();
-            } else {
-                _globalView.update();
-            }
-            //}
-            // gyro simulation panel
-            if (this.bGyroSimView) {
-                if (!this.bGyroSimViewInit) {
-                    _gyroView = new CGyroView(renderTarget, forceClear);
-                    this.bGyroSimViewInit = true;
-                } else {
-                    _gyroView.update();
-                }
-            }
-        }
-
-    }
+setShapeCache = function ( cache_key, shape ) {
+	_object_shapes[ cache_key ] = shape;
+};
+
+createShape = function( description ) {
+	var cache_key, shape;
+	
+	_transform.setIdentity();
+	switch ( description.type ) {
+		case 'plane':
+			cache_key = 'plane_' + description.normal.x + '_' + description.normal.y + '_' + description.normal.z;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				_vec3_1.setX(description.normal.x);
+				_vec3_1.setY(description.normal.y);
+				_vec3_1.setZ(description.normal.z);
+				shape = new Ammo.btStaticPlaneShape(_vec3_1, 0 );
+				setShapeCache( cache_key, shape );
+			}
+			break;
+		
+		case 'box':
+			cache_key = 'box_' + description.width + '_' + description.height + '_' + description.depth;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				_vec3_1.setX(description.width / 2);
+				_vec3_1.setY(description.height / 2);
+				_vec3_1.setZ(description.depth / 2);
+				shape = new Ammo.btBoxShape(_vec3_1);
+				setShapeCache( cache_key, shape );
+			}
+			break;
+		
+		case 'sphere':
+			cache_key = 'sphere_' + description.radius;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btSphereShape( description.radius );
+				setShapeCache( cache_key, shape );
+			}
+			break;
+		
+		case 'cylinder':
+			cache_key = 'cylinder_' + description.width + '_' + description.height + '_' + description.depth;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				_vec3_1.setX(description.width / 2);
+				_vec3_1.setY(description.height / 2);
+				_vec3_1.setZ(description.depth / 2);
+				shape = new Ammo.btCylinderShape(_vec3_1);
+				setShapeCache( cache_key, shape );
+			}
+			break;
+		
+		case 'capsule':
+			cache_key = 'capsule_' + description.radius + '_' + description.height;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				// In Bullet, capsule height excludes the end spheres
+				shape = new Ammo.btCapsuleShape( description.radius, description.height - 2 * description.radius );
+				setShapeCache( cache_key, shape );
+			}
+			break;
+		
+		case 'cone':
+			cache_key = 'cone_' + description.radius + '_' + description.height;
+			if ( ( shape = getShapeFromCache( cache_key ) ) === null ) {
+				shape = new Ammo.btConeShape( description.radius, description.height );
+				setShapeCache( cache_key, shape );
+			}
+			break;
+		
+		case 'concave':
+			var i, triangle, triangle_mesh = new Ammo.btTriangleMesh;
+			if (!description.triangles.length) return false;
+
+			for ( i = 0; i < description.triangles.length; i++ ) {  //noprotect
+				triangle = description.triangles[i];
+				
+				_vec3_1.setX(triangle[0].x);
+				_vec3_1.setY(triangle[0].y);
+				_vec3_1.setZ(triangle[0].z);
+
+				_vec3_2.setX(triangle[1].x);
+				_vec3_2.setY(triangle[1].y);
+				_vec3_2.setZ(triangle[1].z);
+
+				_vec3_3.setX(triangle[2].x);
+				_vec3_3.setY(triangle[2].y);
+				_vec3_3.setZ(triangle[2].z);
+				
+				triangle_mesh.addTriangle(
+					_vec3_1,
+					_vec3_2,
+					_vec3_3,
+					true
+				);
+			}
+
+			shape = new Ammo.btBvhTriangleMeshShape(
+				triangle_mesh,
+				true,
+				true
+			);
+			_noncached_shapes[description.id] = shape;
+			break;
+		
+		case 'convex':
+			var i, point, shape = new Ammo.btConvexHullShape;
+			for ( i = 0; i < description.points.length; i++ ) {  //noprotect
+				point = description.points[i];
+				
+				_vec3_1.setX(point.x);
+				_vec3_1.setY(point.y);
+				_vec3_1.setZ(point.z);
+
+				shape.addPoint(_vec3_1);
+				
+			}
+			_noncached_shapes[description.id] = shape;
+			break;
+
+		case 'heightfield':
+
+			var ptr = Ammo.allocate(4 * description.xpts * description.ypts, "float", Ammo.ALLOC_NORMAL);
+
+			for (var f = 0; f < description.points.length; f++) {  //noprotect
+				Ammo.setValue(ptr + f,  description.points[f]  , 'float');
+			}
+
+			shape = new Ammo.btHeightfieldTerrainShape(
+					description.xpts,
+					description.ypts,
+					ptr,
+					1,
+					-description.absMaxHeight,
+					description.absMaxHeight,
+					2,
+					0,
+					false
+				);
+
+			_vec3_1.setX(description.xsize/(description.xpts - 1));
+			_vec3_1.setY(description.ysize/(description.ypts - 1));
+			_vec3_1.setZ(1);
+			
+			shape.setLocalScaling(_vec3_1);
+			_noncached_shapes[description.id] = shape;
+			break;
+		
+		default:
+			// Not recognized
+			return;
+			break;
+	}
+	
+	return shape;
+};
+
+public_functions.init = function( params ) {
+	importScripts( params.ammo );
+	
+	_transform = new Ammo.btTransform;
+	_vec3_1 = new Ammo.btVector3(0,0,0);
+	_vec3_2 = new Ammo.btVector3(0,0,0);
+	_vec3_3 = new Ammo.btVector3(0,0,0);
+	_quat = new Ammo.btQuaternion(0,0,0,0);
+	
+	REPORT_CHUNKSIZE = params.reportsize || 50;
+	if ( SUPPORT_TRANSFERABLE ) {
+		// Transferable messages are supported, take advantage of them with TypedArrays
+		worldreport = new Float32Array(2 + REPORT_CHUNKSIZE * WORLDREPORT_ITEMSIZE); // message id + # of objects to report + chunk size * # of values per object
+		collisionreport = new Float32Array(2 + REPORT_CHUNKSIZE * COLLISIONREPORT_ITEMSIZE); // message id + # of collisions to report + chunk size * # of values per object
+		vehiclereport = new Float32Array(2 + REPORT_CHUNKSIZE * VEHICLEREPORT_ITEMSIZE); // message id + # of vehicles to report + chunk size * # of values per object
+		constraintreport = new Float32Array(2 + REPORT_CHUNKSIZE * CONSTRAINTREPORT_ITEMSIZE); // message id + # of constraints to report + chunk size * # of values per object
+	} else {
+		// Transferable messages are not supported, send data as normal arrays
+		worldreport = [];
+		collisionreport = [];
+		vehiclereport = [];
+		constraintreport = [];
+	}
+	worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+	collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+	vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
+	constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
+	
+	var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
+		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration ),
+		solver = new Ammo.btSequentialImpulseConstraintSolver,
+		broadphase;
+	
+	if ( !params.broadphase ) params.broadphase = { type: 'dynamic' };
+	switch ( params.broadphase.type ) {
+		case 'sweepprune':
+			
+			_vec3_1.setX(params.broadphase.aabbmin.x);
+			_vec3_1.setY(params.broadphase.aabbmin.y);
+			_vec3_1.setZ(params.broadphase.aabbmin.z);
+			
+			_vec3_2.setX(params.broadphase.aabbmax.x);
+			_vec3_2.setY(params.broadphase.aabbmax.y);
+			_vec3_2.setZ(params.broadphase.aabbmax.z);
+			
+			broadphase = new Ammo.btAxisSweep3(
+				_vec3_1,
+				_vec3_2
+			);
+			
+			break;
+		
+		case 'dynamic':
+		default:
+			broadphase = new Ammo.btDbvtBroadphase;
+			break;
+	}
+	
+	world = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration );
+	
+	fixedTimeStep = params.fixedTimeStep;
+	rateLimit = params.rateLimit;
+
+	transferableMessage({ cmd: 'worldReady' });
+};
+
+public_functions.registerMaterial = function( description ) {
+	_materials[ description.id ] = description;
+};
+
+public_functions.unRegisterMaterial = function( description ) {
+	delete _materials[ description.id ];
+};
+
+public_functions.setFixedTimeStep = function( description ) {
+	fixedTimeStep = description;
+};
+
+public_functions.setGravity = function( description ) {
+	_vec3_1.setX(description.x);
+	_vec3_1.setY(description.y);
+	_vec3_1.setZ(description.z);
+	world.setGravity(_vec3_1);
+};
+
+public_functions.addObject = function( description ) {
+	
+	var i,
+	localInertia, shape, motionState, rbInfo, body;
+
+shape = createShape( description );
+if (!shape) return;
+// If there are children then this is a compound shape
+if ( description.children ) {
+	var compound_shape = new Ammo.btCompoundShape, _child;
+	compound_shape.addChildShape( _transform, shape );
+	
+	for ( i = 0; i < description.children.length; i++ ) {
+		_child = description.children[i];
+		
+		var trans = new Ammo.btTransform;
+		trans.setIdentity();
+		
+		_vec3_1.setX(_child.position_offset.x);
+		_vec3_1.setY(_child.position_offset.y);
+		_vec3_1.setZ(_child.position_offset.z);
+		trans.setOrigin(_vec3_1); 
+		
+		_quat.setX(_child.rotation.x);
+		_quat.setY(_child.rotation.y);
+		_quat.setZ(_child.rotation.z);
+		_quat.setW(_child.rotation.w);
+		trans.setRotation(_quat); 
+		
+		shape = createShape( description.children[i] );
+		compound_shape.addChildShape( trans, shape );
+		Ammo.destroy(trans);
+	}
+	
+	shape = compound_shape;
+    _compound_shapes[ description.id ] = shape;
+	}
+	_vec3_1.setX(0);
+	_vec3_1.setY(0);
+	_vec3_1.setZ(0);
+	shape.calculateLocalInertia( description.mass, _vec3_1 );
+	
+	_transform.setIdentity();
+	
+	_vec3_2.setX(description.position.x);
+	_vec3_2.setY(description.position.y);
+	_vec3_2.setZ(description.position.z);
+	_transform.setOrigin(_vec3_2);
+	
+	_quat.setX(description.rotation.x);
+	_quat.setY(description.rotation.y);
+	_quat.setZ(description.rotation.z);
+	_quat.setW(description.rotation.w);
+	_transform.setRotation(_quat);
+	
+	motionState = new Ammo.btDefaultMotionState( _transform ); // #TODO: btDefaultMotionState supports center of mass offset as second argument - implement
+	rbInfo = new Ammo.btRigidBodyConstructionInfo( description.mass, motionState, shape, _vec3_1 );
+	
+	if ( description.materialId !== undefined ) {
+		rbInfo.set_m_friction( _materials[ description.materialId ].friction );
+		rbInfo.set_m_restitution( _materials[ description.materialId ].restitution );
+	}
+	
+	body = new Ammo.btRigidBody( rbInfo );
+	Ammo.destroy(rbInfo);
+	
+	if ( typeof description.collision_flags !== 'undefined' ) {
+		body.setCollisionFlags( description.collision_flags );
+	}
+	
+	world.addRigidBody( body );
+	
+	body.id = description.id;
+	_objects[ body.id ] = body;
+	_motion_states[ body.id ] = motionState;
+	
+	var ptr = body.a != undefined ? body.a : body.ptr;
+	_objects_ammo[ptr] = body.id;
+	_num_objects++;
+	
+	transferableMessage({ cmd: 'objectReady', params: body.id });
+};
+
+public_functions.addVehicle = function( description ) {
+	var vehicle_tuning = new Ammo.btVehicleTuning(),
+		vehicle;
+
+	vehicle_tuning.set_m_suspensionStiffness( description.suspension_stiffness );
+	vehicle_tuning.set_m_suspensionCompression( description.suspension_compression );
+	vehicle_tuning.set_m_suspensionDamping( description.suspension_damping );
+	vehicle_tuning.set_m_maxSuspensionTravelCm( description.max_suspension_travel );
+	vehicle_tuning.set_m_maxSuspensionForce( description.max_suspension_force );
+
+	vehicle = new Ammo.btRaycastVehicle( vehicle_tuning, _objects[ description.rigidBody ], new Ammo.btDefaultVehicleRaycaster( world ) );
+	vehicle.tuning = vehicle_tuning;
+
+	_objects[ description.rigidBody ].setActivationState( 4 );
+	vehicle.setCoordinateSystem( 0, 1, 2 );
+
+	world.addVehicle( vehicle );
+	_vehicles[ description.id ] = vehicle;
+};
+public_functions.removeVehicle = function( description ) {
+	delete _vehicles[ description.id ];
+};
+
+public_functions.addWheel = function( description ) {
+	if ( _vehicles[description.id] !== undefined ) {
+		var tuning = _vehicles[description.id].tuning;
+		if ( description.tuning !== undefined ) {
+			tuning = new Ammo.btVehicleTuning();
+			tuning.set_m_suspensionStiffness( description.tuning.suspension_stiffness );
+			tuning.set_m_suspensionCompression( description.tuning.suspension_compression );
+			tuning.set_m_suspensionDamping( description.tuning.suspension_damping );
+			tuning.set_m_maxSuspensionTravelCm( description.tuning.max_suspension_travel );
+			tuning.set_m_maxSuspensionForce( description.tuning.max_suspension_force );
+		}
+		
+		_vec3_1.setX(description.connection_point.x);
+		_vec3_1.setY(description.connection_point.y);
+		_vec3_1.setZ(description.connection_point.z);
+		
+		_vec3_2.setX(description.wheel_direction.x);
+		_vec3_2.setY(description.wheel_direction.y);
+		_vec3_2.setZ(description.wheel_direction.z);
+		
+		_vec3_3.setX(description.wheel_axle.x);
+		_vec3_3.setY(description.wheel_axle.y);
+		_vec3_3.setZ(description.wheel_axle.z);
+		
+		_vehicles[description.id].addWheel(
+			_vec3_1,
+			_vec3_2,
+			_vec3_3,
+			description.suspension_rest_length,
+			description.wheel_radius,
+			tuning,
+			description.is_front_wheel
+		);
+	}
+
+	_num_wheels++;
+
+	if ( SUPPORT_TRANSFERABLE ) {
+		vehiclereport = new Float32Array(1 + _num_wheels * VEHICLEREPORT_ITEMSIZE); // message id & ( # of objects to report * # of values per object )
+		vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
+	} else {
+		vehiclereport = [ MESSAGE_TYPES.VEHICLEREPORT ];
+	}
+};
+
+public_functions.setSteering = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].setSteeringValue( details.steering, details.wheel );
+	}
+};
+public_functions.setBrake = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].setBrake( details.brake, details.wheel );
+	}
+};
+public_functions.applyEngineForce = function( details ) {
+	if ( _vehicles[details.id] !== undefined ) {
+		_vehicles[details.id].applyEngineForce( details.force, details.wheel );
+	}
+};
+
+public_functions.removeObject = function( details ) {
+	world.removeRigidBody( _objects[details.id] );
+	Ammo.destroy(_objects[details.id]);
+	Ammo.destroy(_motion_states[details.id]);
+    if (_compound_shapes[details.id]) Ammo.destroy(_compound_shapes[details.id]);
+	if (_noncached_shapes[details.id]) Ammo.destroy(_noncached_shapes[details.id]);
+	var ptr = _objects[details.id].a != undefined ? _objects[details.id].a : _objects[details.id].ptr;
+	delete _objects_ammo[ptr];
+	delete _objects[details.id];
+	delete _motion_states[details.id];
+    if (_compound_shapes[details.id]) delete _compound_shapes[details.id];
+	if (_noncached_shapes[details.id]) delete _noncached_shapes[details.id];
+	_num_objects--;
+};
+
+public_functions.updateTransform = function( details ) {
+	_object = _objects[details.id];
+	_object.getMotionState().getWorldTransform( _transform );
+	
+	if ( details.pos ) {
+		_vec3_1.setX(details.pos.x);
+		_vec3_1.setY(details.pos.y);
+		_vec3_1.setZ(details.pos.z);
+		_transform.setOrigin(_vec3_1);
+	}
+	
+	if ( details.quat ) {
+		_quat.setX(details.quat.x);
+		_quat.setY(details.quat.y);
+		_quat.setZ(details.quat.z);
+		_quat.setW(details.quat.w);
+		_transform.setRotation(_quat);
+	}
+	
+	_object.setWorldTransform( _transform );
+	_object.activate();
+};
+
+public_functions.updateMass = function( details ) {
+	// #TODO: changing a static object into dynamic is buggy
+	_object = _objects[details.id];
+	
+	// Per http://www.bulletphysics.org/Bullet/phpBB3/viewtopic.php?p=&f=9&t=3663#p13816
+	world.removeRigidBody( _object );
+	
+	_vec3_1.setX(0);
+	_vec3_1.setY(0);
+	_vec3_1.setZ(0);
+	
+	_object.setMassProps( details.mass, _vec3_1 );
+	world.addRigidBody( _object );
+	_object.activate();
+};
+
+public_functions.applyCentralImpulse = function ( details ) {
+	
+	_vec3_1.setX(details.x);
+	_vec3_1.setY(details.y);
+	_vec3_1.setZ(details.z);
+	
+	_objects[details.id].applyCentralImpulse(_vec3_1);
+	_objects[details.id].activate();
+};
+
+public_functions.applyImpulse = function ( details ) {
+
+	_vec3_1.setX(details.impulse_x);
+	_vec3_1.setY(details.impulse_y);
+	_vec3_1.setZ(details.impulse_z);
+	
+	_vec3_2.setX(details.x);
+	_vec3_2.setY(details.y);
+	_vec3_2.setZ(details.z);
+
+	_objects[details.id].applyImpulse(
+		_vec3_1,
+		_vec3_2
+	);
+	_objects[details.id].activate();
+};
+
+public_functions.applyCentralForce = function ( details ) {
+	
+	_vec3_1.setX(details.x);
+	_vec3_1.setY(details.y);
+	_vec3_1.setZ(details.z);
+	
+	_objects[details.id].applyCentralForce(_vec3_1);
+	_objects[details.id].activate();
+};
+
+public_functions.applyForce = function ( details ) {
+	
+	_vec3_1.setX(details.impulse_x);
+	_vec3_1.setY(details.impulse_y);
+	_vec3_1.setZ(details.impulse_z);
+	
+	_vec3_2.setX(details.x);
+	_vec3_2.setY(details.y);
+	_vec3_2.setZ(details.z);
+	
+	_objects[details.id].applyForce(
+		_vec3_1,
+		_vec3_2
+	);	
+	_objects[details.id].activate();
+};
+
+public_functions.setAngularVelocity = function ( details ) {
+
+	_vec3_1.setX(details.x);
+	_vec3_1.setY(details.y);
+	_vec3_1.setZ(details.z);
+	
+	_objects[details.id].setAngularVelocity(
+		_vec3_1
+	);
+	_objects[details.id].activate();
+};
+
+public_functions.setLinearVelocity = function ( details ) {
+
+	_vec3_1.setX(details.x);
+	_vec3_1.setY(details.y);
+	_vec3_1.setZ(details.z);
+	
+	_objects[details.id].setLinearVelocity(
+		_vec3_1
+	);
+	_objects[details.id].activate();
+};
+
+public_functions.setAngularFactor = function ( details ) {
+
+	_vec3_1.setX(details.x);
+	_vec3_1.setY(details.y);
+	_vec3_1.setZ(details.z);
+	
+	_objects[details.id].setAngularFactor(
+			_vec3_1
+	);
+};
+
+public_functions.setLinearFactor = function ( details ) {
+
+	_vec3_1.setX(details.x);
+	_vec3_1.setY(details.y);
+	_vec3_1.setZ(details.z);
+	
+	_objects[details.id].setLinearFactor(
+		_vec3_1
+	);
+};
+
+public_functions.setDamping = function ( details ) {
+	_objects[details.id].setDamping( details.linear, details.angular );
+};
+
+public_functions.setCcdMotionThreshold = function ( details ) {
+	_objects[details.id].setCcdMotionThreshold( details.threshold );
+};
+
+public_functions.setCcdSweptSphereRadius = function ( details ) {
+	_objects[details.id].setCcdSweptSphereRadius( details.radius );
+};
+
+public_functions.addConstraint = function ( details ) {
+	var constraint;
+
+	switch ( details.type ) {
+		
+		case 'point':
+			if ( details.objectb === undefined ) {
+				
+				_vec3_1.setX(details.positiona.x);
+				_vec3_1.setY(details.positiona.y);
+				_vec3_1.setZ(details.positiona.z);
+				
+				constraint = new Ammo.btPoint2PointConstraint(
+					_objects[ details.objecta ],
+					_vec3_1
+				);
+			} else {
+				
+				_vec3_1.setX(details.positiona.x);
+				_vec3_1.setY(details.positiona.y);
+				_vec3_1.setZ(details.positiona.z);
+				
+				_vec3_2.setX(details.positionb.x);
+				_vec3_2.setY(details.positionb.y);
+				_vec3_2.setZ(details.positionb.z);
+				
+				constraint = new Ammo.btPoint2PointConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					_vec3_1,
+					_vec3_2
+				);
+			}
+			break;
+		
+		case 'hinge':
+			if ( details.objectb === undefined ) {
+				
+				_vec3_1.setX(details.positiona.x);
+				_vec3_1.setY(details.positiona.y);
+				_vec3_1.setZ(details.positiona.z);
+				
+				_vec3_2.setX(details.axis.x);
+				_vec3_2.setY(details.axis.y);
+				_vec3_2.setZ(details.axis.z);
+				
+				constraint = new Ammo.btHingeConstraint(
+					_objects[ details.objecta ],
+					_vec3_1,
+					_vec3_2
+				);
+			} else {
+				
+				_vec3_1.setX(details.positiona.x);
+				_vec3_1.setY(details.positiona.y);
+				_vec3_1.setZ(details.positiona.z);
+				
+				_vec3_2.setX(details.positionb.x);
+				_vec3_2.setY(details.positionb.y);
+				_vec3_2.setZ(details.positionb.z);
+
+				_vec3_3.setX(details.axis.x);
+				_vec3_3.setY(details.axis.y);
+				_vec3_3.setZ(details.axis.z);
+				
+				constraint = new Ammo.btHingeConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					_vec3_1,
+					_vec3_2,
+					_vec3_3,
+					_vec3_3
+				);
+			}
+			break;
+		
+		case 'slider':
+			var transforma, transformb, rotation;
+		
+			transforma = new Ammo.btTransform();
+			
+			_vec3_1.setX(details.positiona.x);
+			_vec3_1.setY(details.positiona.y);
+			_vec3_1.setZ(details.positiona.z);
+			
+			transforma.setOrigin(_vec3_1);
+			
+			var rotation = transforma.getRotation();
+			rotation.setEuler( details.axis.x, details.axis.y, details.axis.z );
+			transforma.setRotation( rotation );
+			
+			if ( details.objectb ) {
+				transformb = new Ammo.btTransform();
+
+				_vec3_2.setX(details.positionb.x);
+				_vec3_2.setY(details.positionb.y);
+				_vec3_2.setZ(details.positionb.z);
+
+				transformb.setOrigin(_vec3_2);
+				
+				rotation = transformb.getRotation();
+				rotation.setEuler( details.axis.x, details.axis.y, details.axis.z );
+				transformb.setRotation( rotation );
+				
+				constraint = new Ammo.btSliderConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					transforma,
+					transformb,
+					true
+				);
+			} else {
+				constraint = new Ammo.btSliderConstraint(
+					_objects[ details.objecta ],
+					transforma,
+					true
+				);
+			}
+			
+			Ammo.destroy(transforma);
+			if (transformb != undefined) {
+				Ammo.destroy(transformb);	
+			}
+			break;
+		
+		case 'conetwist':
+			var transforma, transformb;
+			
+			transforma = new Ammo.btTransform();
+			transforma.setIdentity();
+			
+			transformb = new Ammo.btTransform();
+			transformb.setIdentity();
+			
+			_vec3_1.setX(details.positiona.x);
+			_vec3_1.setY(details.positiona.y);
+			_vec3_1.setZ(details.positiona.z);
+			
+			_vec3_2.setX(details.positionb.x);
+			_vec3_2.setY(details.positionb.y);
+			_vec3_2.setZ(details.positionb.z);
+			
+			transforma.setOrigin(_vec3_1);
+			transformb.setOrigin(_vec3_2);
+			
+			var rotation = transforma.getRotation();
+			rotation.setEulerZYX( -details.axisa.z, -details.axisa.y, -details.axisa.x );
+			transforma.setRotation( rotation );
+			
+			rotation = transformb.getRotation();
+			rotation.setEulerZYX( -details.axisb.z, -details.axisb.y, -details.axisb.x );
+			transformb.setRotation( rotation );
+			
+			constraint = new Ammo.btConeTwistConstraint(
+				_objects[ details.objecta ],
+				_objects[ details.objectb ],
+				transforma,
+				transformb
+			);
+			
+			constraint.setLimit( Math.PI, 0, Math.PI );
+			
+			Ammo.destroy(transforma);
+			Ammo.destroy(transformb);	
+			
+			break;
+		
+		case 'dof':
+			var transforma, transformb, rotation;
+		
+			transforma = new Ammo.btTransform();
+			transforma.setIdentity();
+			
+			_vec3_1.setX(details.positiona.x);
+			_vec3_1.setY(details.positiona.y);
+			_vec3_1.setZ(details.positiona.z);
+			
+			transforma.setOrigin(_vec3_1 );
+			
+			rotation = transforma.getRotation();
+			rotation.setEulerZYX( -details.axisa.z, -details.axisa.y, -details.axisa.x );
+			transforma.setRotation( rotation );
+			
+			if ( details.objectb ) {
+				transformb = new Ammo.btTransform();
+				transformb.setIdentity();
+				
+				_vec3_2.setX(details.positionb.x);
+				_vec3_2.setY(details.positionb.y);
+				_vec3_2.setZ(details.positionb.z);
+				
+				transformb.setOrigin(_vec3_2);
+				
+				rotation = transformb.getRotation();
+				rotation.setEulerZYX( -details.axisb.z, -details.axisb.y, -details.axisb.x );
+				transformb.setRotation( rotation );
+				
+				constraint = new Ammo.btGeneric6DofConstraint(
+					_objects[ details.objecta ],
+					_objects[ details.objectb ],
+					transforma,
+					transformb
+				);
+			} else {
+				constraint = new Ammo.btGeneric6DofConstraint(
+					_objects[ details.objecta ],
+					transforma
+				);
+			}
+			Ammo.destroy(transforma);
+			if (transformb != undefined) {
+				Ammo.destroy(transformb);	
+			}
+			break;
+		
+		default:
+			return;
+		
+	};
+	
+	world.addConstraint( constraint );
+
+	constraint.enableFeedback();
+	_constraints[ details.id ] = constraint;
+	_num_constraints++;
+
+	if ( SUPPORT_TRANSFERABLE ) {
+		constraintreport = new Float32Array(1 + _num_constraints * CONSTRAINTREPORT_ITEMSIZE); // message id & ( # of objects to report * # of values per object )
+		constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
+	} else {
+		constraintreport = [ MESSAGE_TYPES.CONSTRAINTREPORT ];
+	}
+};
+
+public_functions.removeConstraint = function( details ) {
+	var constraint = _constraints[ details.id ];
+	if ( constraint !== undefined ) {
+		world.removeConstraint( constraint );
+		delete _constraints[ details.id ];
+		_num_constraints--;
+	}
+};
+
+public_functions.constraint_setBreakingImpulseThreshold = function( details ) {
+	var constraint = _constraints[ details.id ];
+	if ( constraint !== undefind ) {
+		constraint.setBreakingImpulseThreshold( details.threshold );
+	}
+};
+
+public_functions.simulate = function simulate( params ) {
+	if ( world ) {
+		params = params || {};
+		
+		if ( !params.timeStep ) {
+			if ( last_simulation_time ) {
+				params.timeStep = 0;
+				while ( params.timeStep + last_simulation_duration <= fixedTimeStep ) {
+					params.timeStep = ( Date.now() - last_simulation_time ) / 1000; // time since last simulation
+				}
+			} else {
+				params.timeStep = fixedTimeStep; // handle first frame
+			}
+		} else {
+			if ( params.timeStep < fixedTimeStep ) {
+				params.timeStep = fixedTimeStep;
+			}
+		}
+
+		params.maxSubSteps = params.maxSubSteps || Math.ceil( params.timeStep / fixedTimeStep ); // If maxSubSteps is not defined, keep the simulation fully up to date
+
+		last_simulation_duration = Date.now();
+		world.stepSimulation( params.timeStep, params.maxSubSteps, fixedTimeStep );
+		
+		reportVehicles();
+		reportCollisions();
+		reportConstraints();
+		reportWorld();
+		
+		last_simulation_duration = ( Date.now() - last_simulation_duration ) / 1000;
+		last_simulation_time = Date.now();
+	}
+};
+
+
+// Constraint functions
+public_functions.hinge_setLimits = function( params ) {
+	_constraints[ params.constraint ].setLimit( params.low, params.high, 0, params.bias_factor, params.relaxation_factor );
+};
+public_functions.hinge_enableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.enableAngularMotor( true, params.velocity, params.acceleration );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.hinge_disableMotor = function( params ) {
+	_constraints[ params.constraint ].enableMotor( false );
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+
+public_functions.slider_setLimits = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setLowerLinLimit( params.lin_lower || 0 );
+	constraint.setUpperLinLimit( params.lin_upper || 0 );
+	
+	constraint.setLowerAngLimit( params.ang_lower || 0 );
+	constraint.setUpperAngLimit( params.ang_upper || 0 );
+};
+public_functions.slider_setRestitution = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setSoftnessLimLin( params.linear || 0 );
+	constraint.setSoftnessLimAng( params.angular || 0 );
+};
+public_functions.slider_enableLinearMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setTargetLinMotorVelocity( params.velocity );
+	constraint.setMaxLinMotorForce( params.acceleration );
+	constraint.setPoweredLinMotor( true );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.slider_disableLinearMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setPoweredLinMotor( false );
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.slider_enableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setTargetAngMotorVelocity( params.velocity );
+	constraint.setMaxAngMotorForce( params.acceleration );
+	constraint.setPoweredAngMotor( true );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.slider_disableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setPoweredAngMotor( false );
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+
+public_functions.conetwist_setLimit = function( params ) {
+	_constraints[ params.constraint ].setLimit( params.z, params.y, params.x ); // ZYX order
+};
+public_functions.conetwist_enableMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.enableMotor( true );
+	constraint.getRigidBodyA().activate();
+	constraint.getRigidBodyB().activate();
+};
+public_functions.conetwist_setMaxMotorImpulse = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.setMaxMotorImpulse( params.max_impulse );
+	constraint.getRigidBodyA().activate();
+	constraint.getRigidBodyB().activate();
+};
+public_functions.conetwist_setMotorTarget = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	_quat.setX(params.x);
+	_quat.setY(params.y);
+	_quat.setZ(params.z);
+	_quat.setW(params.w);
+	
+	constraint.setMotorTarget(_quat);
+	
+	constraint.getRigidBodyA().activate();
+	constraint.getRigidBodyB().activate();
+};
+public_functions.conetwist_disableMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	constraint.enableMotor( false );
+	constraint.getRigidBodyA().activate();
+	constraint.getRigidBodyB().activate();
+};
+
+public_functions.dof_setLinearLowerLimit = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	_vec3_1.setX(params.x);
+	_vec3_1.setY(params.y);
+	_vec3_1.setZ(params.z);
+	
+	constraint.setLinearLowerLimit(_vec3_1);
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_setLinearUpperLimit = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	_vec3_1.setX(params.x);
+	_vec3_1.setY(params.y);
+	_vec3_1.setZ(params.z);
+	
+	constraint.setLinearUpperLimit(_vec3_1);
+
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_setAngularLowerLimit = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	_vec3_1.setX(params.x);
+	_vec3_1.setY(params.y);
+	_vec3_1.setZ(params.z);
+	
+	constraint.setAngularLowerLimit(_vec3_1);
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {											
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_setAngularUpperLimit = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	_vec3_1.setX(params.x);
+	_vec3_1.setY(params.y);
+	_vec3_1.setZ(params.z);
+	
+	constraint.setAngularUpperLimit(_vec3_1);
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_enableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	var motor = constraint.getRotationalLimitMotor( params.which );
+	motor.set_m_enableMotor( true );
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_configureAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	var motor = constraint.getRotationalLimitMotor( params.which );
+	
+	motor.set_m_loLimit( params.low_angle );
+	motor.set_m_hiLimit( params.high_angle );
+	motor.set_m_targetVelocity( params.velocity );
+	motor.set_m_maxMotorForce( params.max_force );
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+public_functions.dof_disableAngularMotor = function( params ) {
+	var constraint = _constraints[ params.constraint ];
+	
+	var motor = constraint.getRotationalLimitMotor( params.which );
+	motor.set_m_enableMotor( false );
+	
+	constraint.getRigidBodyA().activate();
+	if ( constraint.getRigidBodyB() ) {
+		constraint.getRigidBodyB().activate();
+	}
+};
+
+reportWorld = function() {
+	var index, object,
+		transform, origin, rotation, 
+		offset = 0,
+		i = 0;
+	
+	if ( SUPPORT_TRANSFERABLE ) {
+		if ( worldreport.length < 2 + _num_objects * WORLDREPORT_ITEMSIZE ) {
+			worldreport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * WORLDREPORT_ITEMSIZE // # of values needed * item size
+			);
+			worldreport[0] = MESSAGE_TYPES.WORLDREPORT;
+		}
+	}
+	
+	worldreport[1] = _num_objects; // record how many objects we're reporting on
+
+	//for ( i = 0; i < worldreport[1]; i++ ) {
+	for ( index in _objects ) {  //noprotect
+		if ( _objects.hasOwnProperty( index ) ) {
+			object = _objects[index];
+			
+			// #TODO: we can't use center of mass transform when center of mass can change,
+			//        but getMotionState().getWorldTransform() screws up on objects that have been moved
+			//object.getMotionState().getWorldTransform( transform );
+			transform = object.getCenterOfMassTransform(); 
+			
+			origin = transform.getOrigin(); 
+			rotation = transform.getRotation();
+			
+			// add values to report
+			offset = 2 + (i++) * WORLDREPORT_ITEMSIZE;
+			
+			worldreport[ offset ] = object.id;
+			
+			worldreport[ offset + 1 ] = origin.x();
+			worldreport[ offset + 2 ] = origin.y();
+			worldreport[ offset + 3 ] = origin.z();
+			
+			worldreport[ offset + 4 ] = rotation.x();
+			worldreport[ offset + 5 ] = rotation.y();
+			worldreport[ offset + 6 ] = rotation.z();
+			worldreport[ offset + 7 ] = rotation.w();
+			
+			_vector = object.getLinearVelocity();
+			worldreport[ offset + 8 ] = _vector.x();
+			worldreport[ offset + 9 ] = _vector.y();
+			worldreport[ offset + 10 ] = _vector.z();
+			
+			_vector = object.getAngularVelocity();
+			worldreport[ offset + 11 ] = _vector.x();
+			worldreport[ offset + 12 ] = _vector.y();
+			worldreport[ offset + 13 ] = _vector.z();
+		}
+	}
+	
+	
+	if ( SUPPORT_TRANSFERABLE ) {
+		transferableMessage( worldreport.buffer, [worldreport.buffer] );
+	} else {
+		transferableMessage( worldreport );
+	}
+	
+};
+
+reportCollisions = function() {
+	var i, offset,
+		dp = world.getDispatcher(),
+		num = dp.getNumManifolds(),
+		manifold, num_contacts, j, pt,
+		_collided = false;
+	
+	if ( SUPPORT_TRANSFERABLE ) {
+		if ( collisionreport.length < 2 + num * COLLISIONREPORT_ITEMSIZE ) {
+			collisionreport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_objects / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * COLLISIONREPORT_ITEMSIZE // # of values needed * item size
+			);
+			collisionreport[0] = MESSAGE_TYPES.COLLISIONREPORT;
+		}
+	}
+	
+	collisionreport[1] = 0; // how many collisions we're reporting on
+	
+	for ( i = 0; i < num; i++ ) {  //noprotect
+		manifold = dp.getManifoldByIndexInternal( i );
+		
+		num_contacts = manifold.getNumContacts();
+		if ( num_contacts === 0 ) {
+			continue;
+		}
+		
+		for ( j = 0; j < num_contacts; j++ ) {   //noprotect
+			pt = manifold.getContactPoint( j );
+			//if ( pt.getDistance() < 0 ) {
+				offset = 2 + (collisionreport[1]++) * COLLISIONREPORT_ITEMSIZE;
+				collisionreport[ offset ] = _objects_ammo[ manifold.getBody0() ];
+				collisionreport[ offset + 1 ] = _objects_ammo[ manifold.getBody1() ];
+
+				_vector = pt.get_m_normalWorldOnB();
+				collisionreport[ offset + 2 ] = _vector.x();
+				collisionreport[ offset + 3 ] = _vector.y();
+				collisionreport[ offset + 4 ] = _vector.z();
+				break;
+			//}
+				
+				transferableMessage( _objects_ammo );	
+		
+		}	
+	}
+	
+	
+	if ( SUPPORT_TRANSFERABLE ) {
+		transferableMessage( collisionreport.buffer, [collisionreport.buffer] );
+	} else {
+		transferableMessage( collisionreport );
+	}
+};
+
+reportVehicles = function() {
+	var index, vehicle,
+		transform, origin, rotation, 
+		offset = 0,
+		i = 0, j = 0;
+
+	if ( SUPPORT_TRANSFERABLE ) {
+		if ( vehiclereport.length < 2 + _num_wheels * VEHICLEREPORT_ITEMSIZE ) {
+			vehiclereport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_wheels / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * VEHICLEREPORT_ITEMSIZE // # of values needed * item size
+			);
+			vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
+		}
+	}
+
+	for ( index in _vehicles ) {//noprotect
+		if ( _vehicles.hasOwnProperty( index ) ) {
+			vehicle = _vehicles[index];
+
+			for ( j = 0; j < vehicle.getNumWheels(); j++ ) {  //noprotect
+
+				//vehicle.updateWheelTransform( j, true );
+
+				//transform = vehicle.getWheelTransformWS( j );
+				transform = vehicle.getWheelInfo( j ).get_m_worldTransform(); 
+
+				origin = transform.getOrigin(); 
+				rotation = transform.getRotation(); 
+
+				// add values to report
+				offset = 1 + (i++) * VEHICLEREPORT_ITEMSIZE;
+
+				vehiclereport[ offset ] = index;
+				vehiclereport[ offset + 1 ] = j;
+
+				vehiclereport[ offset + 2 ] = origin.x();
+				vehiclereport[ offset + 3 ] = origin.y();
+				vehiclereport[ offset + 4 ] = origin.z();
+
+				vehiclereport[ offset + 5 ] = rotation.x();
+				vehiclereport[ offset + 6 ] = rotation.y();
+				vehiclereport[ offset + 7 ] = rotation.z();
+				vehiclereport[ offset + 8 ] = rotation.w();
+
+			}
+
+		}
+	}
+	
+	if ( j !== 0 ) {
+		if ( SUPPORT_TRANSFERABLE ) {
+			transferableMessage( vehiclereport.buffer, [vehiclereport.buffer] );
+		} else {
+			transferableMessage( vehiclereport );
+		}
+	}
+};
+
+reportConstraints = function() {
+	var index, constraint,
+		offset_body,
+		transform, origin, 
+		offset = 0,
+		i = 0;
+
+	if ( SUPPORT_TRANSFERABLE ) {
+		if ( constraintreport.length < 2 + _num_constraints * CONSTRAINTREPORT_ITEMSIZE ) {
+			constraintreport = new Float32Array(
+				2 + // message id & # objects in report
+				( Math.ceil( _num_constraints / REPORT_CHUNKSIZE ) * REPORT_CHUNKSIZE ) * CONSTRAINTREPORT_ITEMSIZE // # of values needed * item size
+			);
+			constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
+		}
+	}
+
+	for ( index in _constraints ) {  //noprotect
+		if ( _constraints.hasOwnProperty( index ) ) {
+			constraint = _constraints[index];
+			offset_body = constraint.getRigidBodyA();
+			transform = constraint.getFrameOffsetA(); 
+			origin = transform.getOrigin();
+
+			// add values to report
+			offset = 1 + (i++) * CONSTRAINTREPORT_ITEMSIZE;
+
+			constraintreport[ offset ] = index;
+			constraintreport[ offset + 1 ] = offset_body.id;
+			constraintreport[ offset + 2 ] = origin.getX();
+			constraintreport[ offset + 3 ] = origin.getY();
+			constraintreport[ offset + 4 ] = origin.getZ();
+			constraintreport[ offset + 5 ] = constraint.getAppliedImpulse();
+		}
+	}
+
+	
+	if ( i !== 0 ) {
+		if ( SUPPORT_TRANSFERABLE ) {
+			transferableMessage( constraintreport.buffer, [constraintreport.buffer] );
+		} else {
+			transferableMessage( constraintreport );
+		}
+	}
+	
+};
+
+self.onmessage = function( event ) {
+	
+	if ( event.data instanceof Float32Array ) {
+		// transferable object
+		
+		switch ( event.data[0] ) {
+			case MESSAGE_TYPES.WORLDREPORT:
+				worldreport = new Float32Array( event.data );
+				break;
+
+			case MESSAGE_TYPES.COLLISIONREPORT:
+				collisionreport = new Float32Array( event.data );
+				break;
+
+			case MESSAGE_TYPES.VEHICLEREPORT:
+				vehiclereport = new Float32Array( event.data );
+				break;
+
+			case MESSAGE_TYPES.CONSTRAINTREPORT:
+				constraintreport = new Float32Array( event.data );
+				break;
+		}
+		
+		return;
+	}
+	
+	if ( event.data.cmd && public_functions[event.data.cmd] ) {
+		//if ( event.data.params.id !== undefined && _objects[event.data.params.id] === undefined && event.data.cmd !== 'addObject' && event.data.cmd !== 'registerMaterial' ) return;
+		public_functions[event.data.cmd]( event.data.params );
+	}
+	
+};
+
 }
-LeiaWebGLRenderer.prototype = Object.create(THREE.WebGLRenderer.prototype);
+//FileEnd
