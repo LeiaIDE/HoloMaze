@@ -90,7 +90,7 @@ var code = worker.toString();
 	    	//    shading: THREE.FlatShading,
 	    	//    vertexColors: THREE.VertexColors
 	    	//}),
-            new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg'), transparent: true, opacity: 1.0 }),
+            new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/wood.jpg'), transparent: true, opacity: 1.0 }),
             //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/wood.jpg'), transparent: true, opacity: 1.0 }),
 	       //material_g,
 	    	0.9, 
@@ -148,7 +148,7 @@ var code = worker.toString();
 	    // Bumpers
 		THREE.ImageUtils.crossOrigin = "anonymous";
 		var bumper_material = Physijs.createMaterial(
-         new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg') }),
+         new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/wood.jpg') }),
    //      new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/wood.jpg') }),
   //     new THREE.MeshLambertMaterial({ transparent: false, opacity: 0.5 }),
                     0.4, 
@@ -498,7 +498,7 @@ var code = worker.toString();
         var sphere_geometry = new THREE.SphereGeometry(ball_radius, 32, 32);
 		THREE.ImageUtils.crossOrigin = "anonymous";
 		material = Physijs.createMaterial(
-			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/rocks.jpg') }),
+			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/rocks.jpg') }),
             //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/rocks.jpg') }),
             //new THREE.MeshPhongMaterial({ color: 0xaaaaaa, transparent: false, opacity: 0.8, specular: 0xeeeeff, shininess: 20 }),//0x4BD121
             .6,
