@@ -28,25 +28,46 @@ var LeiaWebGLRenderer = function (parameters) {
         this._renderMode = 0;
         console.log("renderMode undefined!");
     } else {
-        this._renderMode = parameters.renderMode;
-        console.log("setRenderMode:" + this._renderMode);
+        if (parameters.renderMode <= 2) {
+            this._renderMode = parameters.renderMode;
+            this.bGlobalView = false;
+            this.bGyroSimView = false;
+        }
+        else if (parameters.renderMode == 3) {
+            this.bGlobalView = true;
+            this.bGyroSimView = false;
+        } else {
+            this.bGlobalView = false;
+            this.bGyroSimView = true;
+        }
+
+        console.log("setRenderMode:" + parameters.renderMode);
     }
 
-    if (parameters.camPanelVisible == undefined) {
-        this.bGlobalView = true;
-        console.log("camPanelVisible undefined!");
+    //0: basic; 1: sharpen; 2:supersampler
+    if (parameters.shaderMode == undefined) {
+        this.nShaderMode = 0;
+        console.log("nShaderMode undefined!");
     } else {
-        this.bGlobalView = parameters.camPanelVisible;
-        console.log("set camPanelVisible:" + parameters.camPanelVisible);
+        this.nShaderMode = parameters.shaderMode;
+        console.log("setShaderMode:" + this.nShaderMode);
     }
 
-    if (parameters.gyroPanelVisible == undefined) {
-        this.bGyroSimView = true;
-        console.log("gyroPanelVisible undefined!");
-    } else {
-        this.bGyroSimView = parameters.gyroPanelVisible;
-        console.log("set gyroPanelVisible:" + parameters.gyroPanelVisible);
-    }
+    //if (parameters.camPanelVisible == undefined) {
+    //    this.bGlobalView = true;
+    //    console.log("camPanelVisible undefined!");
+    //} else {
+    //    this.bGlobalView = parameters.camPanelVisible;
+    //    console.log("set camPanelVisible:" + parameters.camPanelVisible);
+    //}
+
+    //if (parameters.gyroPanelVisible == undefined) {
+    //    this.bGyroSimView = true;
+    //    console.log("gyroPanelVisible undefined!");
+    //} else {
+    //    this.bGyroSimView = parameters.gyroPanelVisible;
+    //    console.log("set gyroPanelVisible:" + parameters.gyroPanelVisible);
+    //}
 
     if (parameters.camFov == undefined) {
         this.view64fov = 50;
@@ -161,12 +182,12 @@ var LeiaWebGLRenderer = function (parameters) {
     // global view
     this.GObserveView = {
         left: 0.0,
-        //bottom: 0.0,
-        //width: 1.0,
-        //height: 1.0,
-        bottom: 0.5,
-        width: 0.25,
-        height: 0.25,
+        bottom: 0.0,
+        width: 1.0,
+        height: 1.0,
+        //bottom: 0.5,
+        //width: 0.25,
+        //height: 0.25,
         up: [0, 1, 0],
     };
     this.spanSphereMode = false;
@@ -834,7 +855,7 @@ var LeiaWebGLRenderer = function (parameters) {
     };
 
     // shaders start
-    this.nShaderMode = 0; // 0:basic; 1:sharpen; 2:surpersample
+    //this.nShaderMode = 0; // 0:basic; 1:sharpen; 2:surpersample
     this._shaderManager = undefined;
     this.bShaderManInit = false;
     var CShaderManager = function () {

@@ -9,7 +9,7 @@ var code = worker.toString();
 	var animate, initScene, render, _boxes = [], spawnBall, gameStep,
 		renderer, scene, ground_material, ground, bottom, light, camera,
         bumper_x1, bumper_x2, bumper_z1, bumper_z2, ball, ball_radius,
-         bumper_x1_s, bumper_x2_s, bumper_z1_s, bumper_z2_s,
+        bumper_x1_s, bumper_x2_s, bumper_z1_s, bumper_z2_s,
         yard_x, yard_z, bush, wall_thick, ground_thick,
         slope_z1, slope_z2, wall_z1, wall_yard_z1, wall_bush, road_width,
         wall_z2, wall_z3, wall_z4, wall_z5, wall_z6, wall_z7, wall_z8,
@@ -29,22 +29,19 @@ var code = worker.toString();
 	var frame = 0;
 	var showGview, Gview, Gcamera;
 	var camHeight = 100;
-	//document.body.onload = function () {
-	    initScene();
-	    animate();
-	//};
+	initScene();
+	animate();
 
 	function initScene() {
-	    //renderer = new THREE.WebGLRenderer({ antialias: true });
 	    renderer = new LeiaWebGLRenderer({
 	        antialias: true,
 	        renderMode: _renderMode,
-	        camPanelVisible: _camPanelVisible,
-	        gyroPanelVisible: _gyroPanelVisible,
+	        shaderMode: _nShaderMode,
+	        //camPanelVisible: _camPanelVisible,
+	        //gyroPanelVisible: _gyroPanelVisible,
 	        camFov: _camFov,
 	        devicePixelRatio: 1
-	    }
-       );//
+	    });//1
 	    renderer.Leia_setSize(showWidth, showHeight);//2
 		renderer.shadowMapEnabled = true;
 		renderer.shadowMapSoft = true;
@@ -57,8 +54,6 @@ var code = worker.toString();
 		var z_g = Number(yaw.innerText) * 40;
 		lastRoll = z_g;
 		lastPitch = x_g;
-		//console.log("document.getElementById:", roll);
-		//console.log("y_g:", y_g);
 
 		document.body.appendChild(renderer.domElement);
 		scene = new Physijs.Scene();
@@ -96,7 +91,7 @@ var code = worker.toString();
 	    	0.9, 
 	    	0.2 
 	    );
-        //// box ground
+        // box ground
 		ground = new Physijs.BoxMesh(
 			new THREE.BoxGeometry(yard_x * 2, ground_thick, yard_z * 2),
 			ground_material,
@@ -131,8 +126,8 @@ var code = worker.toString();
 
 	    //Logo
 	    //var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg') }),
-		//var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/leai_logo.png'), transparent: true, opacity: 1.0 });
-		var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/leai_logo.png'), transparent: true, opacity: 1.0 });
+		var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/leai_logo.png'), transparent: true, opacity: 1.0 });
+		//var logo_mat = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/leai_logo.png'), transparent: true, opacity: 1.0 });
 		var logo_geom = new THREE.PlaneGeometry(yard_x * 63 / 30, yard_z * 14 / 30);
 		logo_1 = new THREE.Mesh(logo_geom, logo_mat);
 		logo_1.position.x = 0;//wall_thick / 2;
@@ -520,7 +515,7 @@ var code = worker.toString();
 		scene.add(ball);
 
 
-	}
+	};
 	
 	function handleCollision(collided_with, linearVelocity, angularVelocity) {
 
@@ -575,7 +570,7 @@ var code = worker.toString();
 	            scene.remove(door_1);
 	            break;	        
 	    }
-	}
+	};
 	function handleCollision2(collided_with, linearVelocity, angularVelocity) {
 
 	    if (collided_with.id != ball.id)
@@ -631,7 +626,7 @@ var code = worker.toString();
 
 
 	    }
-	}
+	};
 	function handleCollision3(collided_with, linearVelocity, angularVelocity) {
 
 	    if (collided_with.id != ball.id)
@@ -707,7 +702,7 @@ var code = worker.toString();
 	            scene.remove(tar_2);
 	            break;
 	    }
-	}
+	};
 		
 	function render() {
 	    var roll = document.getElementById("roll");
@@ -1366,7 +1361,9 @@ var code = worker.toString();
 	    renderer.enableScissorTest(true);
 	    renderer.setClearColor(new THREE.Color().setRGB(0.0, 0.0, 0.0));
 	    //renderer.render(scene, camera);
-	    renderer.Leia_render(scene, camera, undefined, undefined, holoScreenScale);//4
+
+       // if(frame<=100)
+	        renderer.Leia_render(scene, camera, undefined, undefined, holoScreenScale);//4
 	};
 	function animate () {
 	    render();
