@@ -72,7 +72,7 @@ var code = worker.toString();
 		wall_bush = 16;
 		road_width = 3 * ball_radius;
 		//var material_g = new THREE.MeshBasicMaterial({ color: 0x4BD121 });
-		THREE.ImageUtils.crossOrigin = "anonymous";
+		
 		//ground_material = Physijs.createMaterial(
 		//	new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg'), transparent: true, opacity: 0.5 }),
         //   //material_g,
@@ -101,7 +101,7 @@ var code = worker.toString();
 		scene.add(ground);
 
 	    // plane bottom
-		THREE.ImageUtils.crossOrigin = "anonymous";
+		
 		var bottom_material = Physijs.createMaterial(
 			//new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/wood.jpg'), transparent: true, opacity: 0.8 }),
             new THREE.MeshBasicMaterial({
@@ -141,7 +141,7 @@ var code = worker.toString();
 
 
 	    // Bumpers
-		THREE.ImageUtils.crossOrigin = "anonymous";
+		//THREE.ImageUtils.crossOrigin = "anonymous";
 		var bumper_material = Physijs.createMaterial(
          new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/wood.jpg') }),
    //      new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/wood.jpg') }),
@@ -181,7 +181,7 @@ var code = worker.toString();
 		scene.add(bumper_z2);
 
 	    // bumpershadow
-		THREE.ImageUtils.crossOrigin = "anonymous";
+		//THREE.ImageUtils.crossOrigin = "anonymous";
 		var bumper_s_material = Physijs.createMaterial(
   //      new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_6.jpg'), transparent: true, opacity: 0.0 }),
         new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.2 }),
@@ -491,7 +491,7 @@ var code = worker.toString();
 	    var material;
         
         var sphere_geometry = new THREE.SphereGeometry(ball_radius, 32, 32);
-		THREE.ImageUtils.crossOrigin = "anonymous";
+		
 		material = Physijs.createMaterial(
 			new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('resource/rocks.jpg') }),
             //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/rocks.jpg') }),
@@ -659,7 +659,7 @@ var code = worker.toString();
 	            break;
 
 	        case 4:
-				THREE.ImageUtils.crossOrigin = "anonymous";
+				//THREE.ImageUtils.crossOrigin = "anonymous";
 	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/plywood.jpg');
 	            this.material.color.setHex(0x99bb55);
 	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
@@ -675,7 +675,7 @@ var code = worker.toString();
 
 	        case 6:
 	            //this.material.color.setHex(0x77dd55);
-				THREE.ImageUtils.crossOrigin = "anonymous";
+				//THREE.ImageUtils.crossOrigin = "anonymous";
 	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_5.jpg');
 	            this.material.color.setHex(0xffffff);
 	            this.applyCentralImpulse(new THREE.Vector3(impulseForce.x, impulseForce.y, impulseForce.z));
@@ -684,7 +684,7 @@ var code = worker.toString();
 
 	        case 7:
 	            //this.material.color.setHex(0x77dd55);
-				THREE.ImageUtils.crossOrigin = "anonymous";
+				//THREE.ImageUtils.crossOrigin = "anonymous";
 	            //this.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_1.jpg');
 	            //collided_with.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/earth.jpg');
 	            //ground.material.map = THREE.ImageUtils.loadTexture('https://holodevuserresource.s3.amazonaws.com/space_1.jpg');
