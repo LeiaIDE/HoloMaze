@@ -36,11 +36,12 @@ var LeiaWebGLRenderer = function (parameters) {
         else if (parameters.renderMode == 3) {
             this.bGlobalView = true;
             this.bGyroSimView = false;
+            this._renderMode = 2;
         } else {
             this.bGlobalView = false;
             this.bGyroSimView = true;
+            this._renderMode = 2;
         }
-
         console.log("setRenderMode:" + parameters.renderMode);
     }
 
@@ -76,6 +77,9 @@ var LeiaWebGLRenderer = function (parameters) {
         this.view64fov = parameters.camFov;
         console.log("set camFov:" + parameters.camFov);
     }
+
+
+
     var _canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElement('canvas'),
     _viewportWidth,
 	_viewportHeight;
@@ -1406,7 +1410,7 @@ var LeiaWebGLRenderer = function (parameters) {
         this.eyeCenter.updateMatrix();
 
         this.update = function () {
-            this.position.copy(camera.position);
+            this.position.copy(this.eyeCenter.position);
         }
     }
 
@@ -1521,8 +1525,6 @@ var LeiaWebGLRenderer = function (parameters) {
                         meshSY.visible = false;
                         meshSXY.visible = false;
                     }
-
-
                 }
             //============
             //this.ObjMesh2.push(EyeCenter);
