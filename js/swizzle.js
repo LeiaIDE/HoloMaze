@@ -1385,8 +1385,11 @@ var LeiaWebGLRenderer = function (parameters) {
 
         this.update = function () {
             this.position.copy(this.tarObj.position);
+            //save var _tarPosition in index here 
             this.scale = this.tarObj.scale.x;
+            //save var _holoScreenSize in index here 
             this.tarObj.rotation.setFromRotationMatrix(camera.matrix);
+            
         }
     }
 
@@ -1411,6 +1414,8 @@ var LeiaWebGLRenderer = function (parameters) {
 
         this.update = function () {
             this.position.copy(this.eyeCenter.position);
+            //save var _camPosition in index here
+
         }
     }
 

@@ -22,7 +22,7 @@ var code = worker.toString();
         lastRoll, lastYaw, lastPitch,
 	    camMeshs64 = [],
         logo_1,
-	    holoScreenScale    ;
+	    holoScreenSize    ;
 
 	var showWidth =  window.innerWidth;
 	var showHeight = window.innerHeight;
@@ -446,9 +446,11 @@ var code = worker.toString();
         // camera
         //camera = new THREE.PerspectiveCamera(55, showWidth / showHeight, 1, 1000);
         camera = new LeiaCamera(55, showWidth / showHeight, 1, 1000);//3
-        camera.position.set(0, camHeight, 2);
-        camera.lookAt(new THREE.Vector3(0, 15, 0));
-        holoScreenScale = 1.2;
+        //camera.position.set(0, _camPosition, 2);
+        camera.position.copy(_camPosition);
+        //camera.lookAt(new THREE.Vector3(0, 15, 0));
+        camera.lookAt(_tarPosition);
+        holoScreenSize = _holoScreenSize;
         //camera.lookAt(scene.position);
 		ground.add(camera);
 
@@ -1363,7 +1365,7 @@ var code = worker.toString();
 	    //renderer.render(scene, camera);
 
        // if(frame<=100)
-	        renderer.Leia_render(scene, camera, undefined, undefined, holoScreenScale);//4
+	        renderer.Leia_render(scene, camera, undefined, undefined, holoScreenSize);//4
 	};
 	function animate () {
 	    render();
