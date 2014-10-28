@@ -22,7 +22,8 @@ var code = worker.toString();
         lastRoll, lastYaw, lastPitch,
 	    camMeshs64 = [],
         logo_1,
-	    holoScreenSize    ;
+	    holoScreenScale,
+        holoCamFov;
 
 	var showWidth =  window.innerWidth;
 	var showHeight = window.innerHeight;
@@ -39,7 +40,7 @@ var code = worker.toString();
 	        shaderMode: _nShaderMode,
 	        //camPanelVisible: _camPanelVisible,
 	        //gyroPanelVisible: _gyroPanelVisible,
-	        camFov: _camFov,
+	        //camFov: _camFov,
 	        devicePixelRatio: 1
 	    });//1
 	    renderer.Leia_setSize(showWidth, showHeight);//2
@@ -445,12 +446,14 @@ var code = worker.toString();
 
         // camera
         //camera = new THREE.PerspectiveCamera(55, showWidth / showHeight, 1, 1000);
-        camera = new LeiaCamera(55, showWidth / showHeight, 1, 1000);//3
+        //camera = new LeiaCamera(55, showWidth / showHeight, 1, 1000);//3
+        camera = new LeiaCamera();//3
         //camera.position.set(0, _camPosition, 2);
         camera.position.copy(_camPosition);
         //camera.lookAt(new THREE.Vector3(0, 15, 0));
         camera.lookAt(_tarPosition);
-        holoScreenSize = _holoScreenSize;
+        holoScreenScale = _holoScreenScale;
+        holoCamFov = _camFov;
         //camera.lookAt(scene.position);
 		ground.add(camera);
 
@@ -1365,7 +1368,7 @@ var code = worker.toString();
 	    //renderer.render(scene, camera);
 
        // if(frame<=100)
-	        renderer.Leia_render(scene, camera, undefined, undefined, holoScreenSize);//4
+	    renderer.Leia_render(scene, camera, undefined, undefined, holoScreenScale, holoCamFov);//4
 	};
 	function animate () {
 	    render();
@@ -1380,10 +1383,10 @@ var code = worker.toString();
 	    var windowH = height;
 	    renderer.Leia_setSize(windowW, windowH);//5
 	}
-	function setFov(fov) {
-	    var _fov = fov;
-	    renderer.setFov(_fov);
-	}
+	//function setFov(fov) {
+	//    var _fov = fov;
+	//    renderer.setFov(_fov);
+	//}
 	
 
 	document.onkeydown = function (event) {
