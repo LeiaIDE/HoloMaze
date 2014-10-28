@@ -586,7 +586,7 @@ var LeiaWebGLRenderer = function (parameters) {
         }
         this.show = function (oneDir) {
             this.traverse(function (child) {
-                child.visible = true;
+                child.visible = false;
                 if (child.parent == _this.pickers)
                     child.visible = bShowShell;
                 if (child.parent == _this.planes)
@@ -773,6 +773,12 @@ var LeiaWebGLRenderer = function (parameters) {
             } else {
                 _this.axisPickers[0].traverse(function (child) {
                     child.visible = !child.visible;
+                    if (child.parent == _this.axisPickers[0].pickers)
+                        child.visible = false;
+                    if (child.parent == _this.axisPickers[0].planes)
+                        child.visible = false;
+                    //if (child.parent == _this.axisPickers[0].handles)
+                    //    child.visible = false;
                 });
                 _this.object.visible = !_this.object.visible;
                 if (_this.object.name == "tarPlane") {
@@ -1544,6 +1550,8 @@ var LeiaWebGLRenderer = function (parameters) {
 
             this.camControls.attach(this.ObjMesh2[0], false);
             this.tarControls.attach(this.ObjMesh2[1], false);
+            this.ObjMesh2[0].visible = false;
+            this.ObjMesh2[1].visible = false;
             if (bHasCam || tarId == undefined) {
                 scene.add(this.ObjMesh2[0]);
                 scene.add(this.ObjMesh2[1]);
