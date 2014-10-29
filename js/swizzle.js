@@ -1390,13 +1390,19 @@ var LeiaWebGLRenderer = function (parameters) {
         this.tarObj.scale.z = this.scale;
         this.tarObj.updateMatrix();
 
-        this.update = function () {
+        this.getData = function () {
             this.position.copy(this.tarObj.position);
             //save var _tarPosition in index here 
             this.scale = this.tarObj.scale.x;
             //save var _holoScreenSize in index here 
+            this.tarObj.rotation.setFromRotationMatrix(camera.matrix);        
+        }
+        this.setData = function () {
+            this.tarObj.position.copy(this.position);
+            //save var _tarPosition in index here 
+            this.tarObj.scale.x = this.scale;
+            //save var _holoScreenSize in index here 
             this.tarObj.rotation.setFromRotationMatrix(camera.matrix);
-            
         }
     }
 
@@ -1420,14 +1426,16 @@ var LeiaWebGLRenderer = function (parameters) {
         this.eyeCenter.visible = true;
         this.eyeCenter.updateMatrix();
 
-        this.update = function () {
+        this.getData = function () {
             this.position.copy(this.eyeCenter.position);
-            //save var _camPosition in index here
             this.fov = _that.view64fov;
-            //console.log("fov: ", this.fov);
-            //save var _camFov in index here
-
         }
+        this.setData = function () {
+            this.eyeCenter.position.copy(this.position);
+            _that.view64fov  = this.fov;
+        }
+        
+
     }
 
     this.bGlobalViewInit = false;
@@ -1633,8 +1641,8 @@ var LeiaWebGLRenderer = function (parameters) {
 
             //_that._holoScreen.tarObj = this.tarControls.object;
             //_that._holoScreen.tarObj.rotation.setFromRotationMatrix(camera.matrix);
-            _that._holoScreen.update();
-            _that._holoCamCenter.update();
+            _that._holoScreen.getData();
+            _that._holoCamCenter.getData();
 
             if (_that.bGlobalView)
                 _that.render(scene, this.Gcamera, renderTarget, forceClear);
