@@ -1401,6 +1401,8 @@ var LeiaWebGLRenderer = function (parameters) {
             this.tarObj.position.copy(this.position);
             //save var _tarPosition in index here 
             this.tarObj.scale.x = this.scale;
+			this.tarObj.scale.y = this.scale;
+			this.tarObj.scale.z = this.scale;
             //save var _holoScreenSize in index here 
             this.tarObj.rotation.setFromRotationMatrix(camera.matrix);
         }
@@ -1641,8 +1643,8 @@ var LeiaWebGLRenderer = function (parameters) {
 
             //_that._holoScreen.tarObj = this.tarControls.object;
             //_that._holoScreen.tarObj.rotation.setFromRotationMatrix(camera.matrix);
-            _that._holoScreen.getData();
-            _that._holoCamCenter.getData();
+            //_that._holoScreen.getData();
+            //_that._holoCamCenter.getData();
 
             if (_that.bGlobalView)
                 _that.render(scene, this.Gcamera, renderTarget, forceClear);
@@ -1771,33 +1773,150 @@ var LeiaWebGLRenderer = function (parameters) {
         camera.lookAt(camera.targetPosition);
     }
 
-    this.bRendering = true;
-    this.Leia_render = function (scene, camera, renderTarget, forceClear, holoScreenScale, holoCamFov) {
-        if (this.bRendering) {
-            if (camera.position.x == 0 && camera.position.y != 0 && camera.position.z == 0)
+    this.stateData = {};
+	this.messageFlag = 0;
+	this.SetUpRenderStates = function (scene, camera, renderTarget, forceClear, holoScreenScale, holoCamFov, messageFlag){
+		
+		var _holoCamFov = 50;
+		var _holoScreenScale = 1;
+		if (holoCamFov !== undefined)
+            _holoCamFov = holoCamFov;
+        if (holoScreenScale !== undefined)
+            _holoScreenScale = holoScreenScale;
+		if (camera.position.x == 0 && camera.position.y != 0 && camera.position.z == 0)
                 camera.position.z = camera.position.y / 100;
-
-            var _holoCamFov = 50;
-            if (holoCamFov !== undefined)
-                _holoCamFov = holoCamFov;
-            if (!this.bHoloCamCenterInit) {
-                this._holoCamCenter = new CHoloCamCenter(camera, _holoCamFov);
-                this.bHoloCamCenterInit = true;
-            }
-
-            var _holoScreenScale = 1;
-            if (holoScreenScale !== undefined)
-                _holoScreenScale = holoScreenScale;
-            if ((!this.bHoloScreenInit) && camera.position.length() >= 0) {
-                this._holoScreen = new CHoloScreen(camera, _holoScreenScale);
-                this.bHoloScreenInit = true;
-            }
-            if (!this.bShaderManInit) {
-                this._shaderManager = new CShaderManager();
-                this.bShaderManInit = true;
-            }
-            //this._renderMode = 0;
-
+		if (!this.bHoloCamCenterInit) {
+			this._holoCamCenter = new CHoloCamCenter(camera, _holoCamFov);
+			this.bHoloCamCenterInit = true;
+			this.stateData._camFov = this._holoCamCenter.fov;
+			this.stateData._camPosition = new THREE.Vector3(0, 0, 0);
+			this.stateData._camPosition.copy(this._holoCamCenter.position);
+		}
+		if ((!this.bHoloScreenInit) && camera.position.length() >= 0) {
+			this._holoScreen = new CHoloScreen(camera, _holoScreenScale);
+			this.bHoloScreenInit = true;
+			this.stateData._holoScreenScale = this._holoScreen.scale;
+			this.stateData._tarPosition = new THREE.Vector3(0, 0, 0);
+			this.stateData._tarPosition.copy(this._holoScreen.position);
+		}
+		if (!this.bShaderManInit) {
+			this._shaderManager = new CShaderManager();
+			this.bShaderManInit = true;
+		}
+		
+		//passing parameters
+		if(messageFlag == undefined){
+			console.log("messageFlag undefined");
+		}else if(messageFlag == 0){  //IDE
+			
+			this._holoScreen.getData();
+            this._holoCamCenter.getData();
+			
+			var bStateChange = false;
+			if(this.stateData._camFov != this._holoCamCenter.fov || this.stateData._holoScreenScale != this._holoScreen.scale){
+				bStateChange = true;
+			}
+			if(this.stateData._camPosition.x != this._holoCamCenter.position.x || this.stateData._camPosition.y != this._holoCamCenter.position.y || this.stateData._camPosition.z != this._holoCamCenter.position.z){
+				bStateChange = true;
+			}
+			if(this.stateData._tarPosition.x != this._holoScreen.position.x || this.stateData._tarPosition.y != this._holoScreen.position.y || this.stateData._tarPosition.z != this._holoScreen.position.z){
+				bStateChange = true;
+			}
+			
+			//post to top window, modify code in IDE
+			if(bStateChange == true){
+				var message = JSON.stringify({type:'tuning', data:{_camFov:this._holoCamCenter.fov,
+				_camPosition:{x:this._holoCamCenter.position.x,y:this._holoCamCenter.position.y,z:this._holoCamCenter.position.z},
+				_holoScreenScale:this._holoScreen.scale,
+				_tarPosition:{x:this._holoScreen.position.x,y:this._holoScreen.position.y,z:this._holoScreen.position.z},}
+				});
+				window.top.postMessage(message,"*");
+				this.stateData._camFov = this._holoCamCenter.fov;
+				this.stateData._camPosition.copy(this._holoCamCenter.position);
+				this.stateData._holoScreenScale = this._holoScreen.scale;
+				this.stateData._tarPosition.copy(this._holoScreen.position);
+			}
+			//this.messageFlag++;
+			var self = this;
+			if(bStateChange == true){
+				//this.messageFlag = 0;
+				console.log("post data to emulator");
+				 (function(){
+					var dataObject = {action: "UpdateDisplayParams"};
+					dataObject.params = JSON.stringify({type:'tuning', data:{_camFov:self._holoCamCenter.fov,
+				_camPosition:{x:self._holoCamCenter.position.x,y:self._holoCamCenter.position.y,z:self._holoCamCenter.position.z},
+				_holoScreenScale:self._holoScreen.scale,
+				_tarPosition:{x:self._holoScreen.position.x,y:self._holoScreen.position.y,z:self._holoScreen.position.z},}
+				});
+					var xmlhttp = new XMLHttpRequest();
+					xmlhttp.onreadystatechange=function() {
+					  if(this.readyState == this.DONE) {
+						if(this.status == 200 && this.response != null ) {
+						  var params =  JSON.parse(this.responseText);
+						  console.log("Update Display Params:" + this.responseText);
+						  return;
+						}
+					  }
+					};
+					xmlhttp.open("POST","http://127.0.0.1:8887/updateDisplayParams",true);
+					xmlhttp.setRequestHeader('Content-Type', 'text/plain');
+					xmlhttp.send(JSON.stringify(dataObject));
+				  })();
+			}
+		}else if(messageFlag == 1){   //Emulator
+			
+			this._holoScreen.setData();
+            this._holoCamCenter.setData();
+			this.messageFlag++;
+			
+			if(this.messageFlag > 5){
+				console.log("messageFlag Emulator");
+				this.messageFlag = 0;
+				var self = this;
+			   (function(){
+					var xmlhttp = new XMLHttpRequest();
+					xmlhttp.onreadystatechange=function() {
+					  if(this.readyState == this.DONE) {
+						if(this.status == 200 && this.response != null ) {
+						  var params =  JSON.parse(this.responseText);
+						  console.log("requested display info:" + this.responseText);
+							
+						  if(params.data != undefined){
+							self._holoCamCenter.fov = params.data._camFov.toFixed(2);
+							self._holoCamCenter.position.x = params.data._camPosition.x.toFixed(2);
+							self._holoCamCenter.position.y = params.data._camPosition.y.toFixed(2);
+							self._holoCamCenter.position.z = params.data._camPosition.z.toFixed(2);
+							self._holoCamCenter.setData();
+							
+							self._holoScreen.scale = params.data._holoScreenScale.toFixed(2);
+							self._holoScreen.position.x = params.data._tarPosition.x;
+							self._holoScreen.position.y = params.data._tarPosition.y;
+							self._holoScreen.position.z = params.data._tarPosition.z;
+							self._holoScreen.setData();
+						}
+						  return;
+						}else{
+							console.log("something wrong");
+						}
+						// something went wrong
+					  }
+					};
+					xmlhttp.open("GET","http://127.0.0.1:8887/queryDisplayParams",true);
+					//xmlhttp.setRequestHeader('Cache-Control', 'no-cache');
+					//xmlhttp.setRequestHeader('User-Agent', 'holoide');
+					xmlhttp.send();
+				  })();
+			}
+		}else{
+			console.log("messageFlag Error!");
+		}
+	}
+	this.bRendering = true;
+    this.Leia_render = function (scene, camera, renderTarget, forceClear, holoScreenScale, holoCamFov, messageFlag) {
+		
+		this.SetUpRenderStates(scene, camera, renderTarget, forceClear, holoScreenScale, holoCamFov, messageFlag);
+		
+        if (this.bRendering) {
             if (0 == this._renderMode) {
                 var spanMode = this.spanSphereMode;
                 var camPositionCenter = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
