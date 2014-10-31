@@ -1870,7 +1870,7 @@ var LeiaWebGLRenderer = function (parameters) {
 			this.messageFlag++;
 			
 			if(this.messageFlag > 5){
-				console.log("messageFlag Emulator");
+			//	console.log("messageFlag Emulator");
 				this.messageFlag = 0;
 				var self = this;
 			   (function(){
@@ -1879,9 +1879,8 @@ var LeiaWebGLRenderer = function (parameters) {
 					  if(this.readyState == this.DONE) {
 						if(this.status == 200 && this.response != null ) {
 						  var params =  JSON.parse(this.responseText);
-						  console.log("requested display info:" + this.responseText);
-							
-						  if(params.data != undefined){
+	
+						  if(params.data != undefined && params.type == "tuning"){
 							self._holoCamCenter.fov = params.data._camFov.toFixed(2);
 							self._holoCamCenter.position.x = params.data._camPosition.x.toFixed(2);
 							self._holoCamCenter.position.y = params.data._camPosition.y.toFixed(2);
