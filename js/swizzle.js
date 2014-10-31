@@ -36,11 +36,11 @@ var LeiaWebGLRenderer = function (parameters) {
         else if (parameters.renderMode == 3) {
             this.bGlobalView = true;
             this.bGyroSimView = false;
-            this._renderMode = 2;
+            this._renderMode = 0;
         } else {
             this.bGlobalView = false;
             this.bGyroSimView = true;
-            this._renderMode = 2;
+            this._renderMode = 0;
         }
         console.log("setRenderMode:" + parameters.renderMode);
     }
@@ -1915,48 +1915,50 @@ var LeiaWebGLRenderer = function (parameters) {
 		
 		this.SetUpRenderStates(scene, camera, renderTarget, forceClear, holoScreenScale, holoCamFov, messageFlag);
 		
-        if (this.bRendering) {
-            if (0 == this._renderMode) {
-                var spanMode = this.spanSphereMode;
-                var camPositionCenter = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
-                var tmpM = new THREE.Matrix4();
-                var tmpV = new THREE.Vector3(camPositionCenter.x - camera.targetPosition.x, camPositionCenter.y - camera.targetPosition.y, camPositionCenter.z - camera.targetPosition.z);
-                var _d = 0;
-                this.setViewport(0, 0, _canvas.width, _canvas.height);// debug shadow from _gl.viewport
-                this.setScissor(0, 0, _viewportWidth, _viewportHeight);
-                this.enableScissorTest(true);
-                camera.up.set(0, 1, 0);
-                if (tmpV.y > 0 && tmpV.y >= Math.abs(tmpV.x) * 2 && tmpV.y >= Math.abs(tmpV.z) * 2) {
-                    camera.up.set(0, 0, -1);
-                }
-                if (_that._holoScreen.tarObj.geometry.vertices[0] !== undefined) {
-                    _d = this.getCameraIntrinsic(camera, _that._holoScreen.tarObj);
-                }
-                this.render(scene, camera, renderTarget, forceClear);
-            } else if (1 == this._renderMode) {
-                console.log("render64");
-                Leia_compute_renderViews(scene, camera, renderTarget, forceClear);
-                if (this.nShaderMode==2) {
-                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.5, 0.0);
-                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.0, -0.5);
-                    Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.5, -0.5);
-                }
-            } else if (2 == this._renderMode) {
-                Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTarget, forceClear);
-                if (this.nShaderMode==2) {
-                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftX, forceClear, 0.5, 0.0);
-                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftY, forceClear, 0.0, -0.5);
-                    Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftXY, forceClear, 0.5, -0.5);
-                }
+		if (this.bRendering) {
+		    if (this.messageFlag !== 0 || (this.messageFlag == 0 && this.bGlobalView == false && this.bGyroSimView == false)) {
+		        if (0 == this._renderMode) {
+		            var spanMode = this.spanSphereMode;
+		            var camPositionCenter = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z);
+		            var tmpM = new THREE.Matrix4();
+		            var tmpV = new THREE.Vector3(camPositionCenter.x - camera.targetPosition.x, camPositionCenter.y - camera.targetPosition.y, camPositionCenter.z - camera.targetPosition.z);
+		            var _d = 0;
+		            this.setViewport(0, 0, _canvas.width, _canvas.height);// debug shadow from _gl.viewport
+		            this.setScissor(0, 0, _viewportWidth, _viewportHeight);
+		            this.enableScissorTest(true);
+		            camera.up.set(0, 1, 0);
+		            if (tmpV.y > 0 && tmpV.y >= Math.abs(tmpV.x) * 2 && tmpV.y >= Math.abs(tmpV.z) * 2) {
+		                camera.up.set(0, 0, -1);
+		            }
+		            if (_that._holoScreen.tarObj.geometry.vertices[0] !== undefined) {
+		                _d = this.getCameraIntrinsic(camera, _that._holoScreen.tarObj);
+		            }
+		            this.render(scene, camera, renderTarget, forceClear);
+		        } else if (1 == this._renderMode) {
+		            console.log("render64");
+		            Leia_compute_renderViews(scene, camera, renderTarget, forceClear);
+		            if (this.nShaderMode == 2) {
+		                Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.5, 0.0);
+		                Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.0, -0.5);
+		                Leia_compute_renderViews(scene, camera, renderTarget, forceClear, 0.5, -0.5);
+		            }
+		        } else if (2 == this._renderMode) {
+		            Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTarget, forceClear);
+		            if (this.nShaderMode == 2) {
+		                Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftX, forceClear, 0.5, 0.0);
+		                Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftY, forceClear, 0.0, -0.5);
+		                Leia_compute_renderViews(scene, camera, this._shaderManager._swizzleRenderTargetSftXY, forceClear, 0.5, -0.5);
+		            }
 
-                this.setViewport(0, 0, _canvas.width, _canvas.height);// debug shadow, modify _viewport*** here
-                this.setScissor(0, 0, _viewportWidth, _viewportHeight);
-                this.enableScissorTest(true);
-                renderer.render(this._shaderManager.LEIA_output, this._shaderManager.cameraSWIZZLE);
-            } else {
-                //mode error
-                console.log("renderMode error!");
-            }
+		            this.setViewport(0, 0, _canvas.width, _canvas.height);// debug shadow, modify _viewport*** here
+		            this.setScissor(0, 0, _viewportWidth, _viewportHeight);
+		            this.enableScissorTest(true);
+		            renderer.render(this._shaderManager.LEIA_output, this._shaderManager.cameraSWIZZLE);
+		        } else {
+		            //mode error
+		            console.log("renderMode error!");
+		        }
+		    }
 
             // holo tuning panel  
             //if (this.bGlobalView) {
