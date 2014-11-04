@@ -915,7 +915,7 @@ var LeiaWebGLRenderer = function (parameters) {
             //"vec2 viewId     = vec2( floor(pixelCoord.s/200.0)  , floor(pixelCoord.t/150.0)  ); " +
             "float fc        = 0.0;" +
             "fc = getPixel( 1.0, tNormalViews, viewId, sPixId);" +
-            "fc = 1.0 - fc;" +
+           // "fc = 1.0 - fc;" +
             "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
         "}";
         var _SuperSampleSwizzleFragmentShaderSrc =
@@ -964,7 +964,7 @@ var LeiaWebGLRenderer = function (parameters) {
             "   }\n" +
             "}\n" +
             "fc = fc/coeff;" +
-            "fc = 1.0 - fc;" +
+        //    "fc = 1.0 - fc;" +
             "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
         "}";
 
@@ -990,7 +990,7 @@ var LeiaWebGLRenderer = function (parameters) {
             //"vec2 viewId     = vec2( floor(pixelCoord.s/200.0)  , floor(pixelCoord.t/150.0)  ); " +
             "float fc        = 0.0;" +
             "fc = getSharpPixel( invA, tNormalViews, viewId, sPixId);\n" +
-            "fc = 1.0 - fc;" +
+          //  "fc = 1.0 - fc;" +
             "gl_FragColor = vec4(fc, fc, fc, 1.0);" +
         "}";
         function LEIA_internal_fragmentShaderFunction_getSharpPixel5() {
