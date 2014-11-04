@@ -27,6 +27,8 @@ var code = worker.toString();
 
 	var showWidth =  window.innerWidth;
 	var showHeight = window.innerHeight;
+    console.log("showWidth:" + showWidth);
+    console.log("showHeight:" + showHeight);
 	var frame = 0;
 	var showGview, Gview, Gcamera;
 	var camHeight = 100;
