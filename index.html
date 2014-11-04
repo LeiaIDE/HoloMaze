@@ -76,7 +76,7 @@
              if(this.readyState == this.DONE) {
                if(this.status == 200 && this.response != null ) {
                  var params =  JSON.parse(this.responseText);
-                   console.log("requested display info:" + this.responseText);
+                 //  console.log("requested display info:" + this.responseText);
                     if(params.data != undefined && params.type == "ShiftParam"){
                       ShiftX = params.data.x;
                       ShiftY = params.data.y;
