@@ -1369,15 +1369,18 @@ var LeiaWebGLRenderer = function (parameters) {
     
     this._holoScreen = undefined;
     this.bHoloScreenInit = false;
-    var CHoloScreen = function (camera, _scale) {
+    var CHoloScreen = function (camera, _sizeX) {
         this.position = new THREE.Vector3(0, 0, 0);
         this.position.copy(camera.targetPosition);
-        this.scale = _scale;
+        this.scale = 1.0;
+        this.sizeX = _sizeX;
 
-        var __point = new THREE.Vector3();
-        __point.copy(camera.position.clone().sub(camera.targetPosition));
-        var _length = __point.length() / 2;
-        var geoTarRect = new THREE.PlaneGeometry(1 * _length * 4, 1 * _length *3, 1, 1);
+        //var __point = new THREE.Vector3();
+        //__point.copy(camera.position.clone().sub(camera.targetPosition));
+        //var _length = __point.length() / 2;
+
+        var _length = this.sizeX / 4.0;
+        var geoTarRect = new THREE.PlaneGeometry(1 * _length * 4, 1 * _length * 3, 1, 1);
         var matTarRect = new THREE.MeshBasicMaterial({ color: 0x0066aa, transparent: true, opacity: 0.2 });//0x4BD121
         matTarRect.side = THREE.DoubleSide;
         this.tarObj = new THREE.Mesh(geoTarRect, matTarRect);
@@ -1395,6 +1398,7 @@ var LeiaWebGLRenderer = function (parameters) {
             //save var _tarPosition in index here 
             this.scale = this.tarObj.scale.x;
             //save var _holoScreenSize in index here 
+            this.sizeX *= this.scale;
             this.tarObj.rotation.setFromRotationMatrix(camera.matrix);        
         }
         this.setData = function () {
@@ -1403,7 +1407,8 @@ var LeiaWebGLRenderer = function (parameters) {
             this.tarObj.scale.x = this.scale;
 			this.tarObj.scale.y = this.scale;
 			this.tarObj.scale.z = this.scale;
-            //save var _holoScreenSize in index here 
+            //save var _holoScreenSize in index here
+			this.sizeX *= this.scale;
             this.tarObj.rotation.setFromRotationMatrix(camera.matrix);
         }
     }
@@ -1775,14 +1780,17 @@ var LeiaWebGLRenderer = function (parameters) {
 
     this.stateData = {};
 	this.messageFlag = 0;
-	this.SetUpRenderStates = function (scene, camera, renderTarget, forceClear, holoScreenScale, holoCamFov, messageFlag){
+	this.SetUpRenderStates = function (scene, camera, renderTarget, forceClear, holoScreenSize, holoCamFov, messageFlag){
 		
 		var _holoCamFov = 50;
 		var _holoScreenScale = 1;
 		if (holoCamFov !== undefined)
             _holoCamFov = holoCamFov;
-        if (holoScreenScale !== undefined)
-            _holoScreenScale = holoScreenScale;
+        //if (holoScreenScale !== undefined)
+	    //    _holoScreenScale = holoScreenScale;
+		var _holoScreenSize = 100;
+		if (holoScreenSize !== undefined)
+		    _holoScreenSize = holoScreenSize;
 		if (camera.position.x == 0 && camera.position.y != 0 && camera.position.z == 0)
                 camera.position.z = camera.position.y / 100;
 		if (!this.bHoloCamCenterInit) {
@@ -1793,9 +1801,10 @@ var LeiaWebGLRenderer = function (parameters) {
 			this.stateData._camPosition.copy(this._holoCamCenter.position);
 		}
 		if ((!this.bHoloScreenInit) && camera.position.length() >= 0) {
-			this._holoScreen = new CHoloScreen(camera, _holoScreenScale);
+		    this._holoScreen = new CHoloScreen(camera, _holoScreenSize);
 			this.bHoloScreenInit = true;
 			this.stateData._holoScreenScale = this._holoScreen.scale;
+			this.stateData._holoScreenSize = this._holoScreen.sizeX;
 			this.stateData._tarPosition = new THREE.Vector3(0, 0, 0);
 			this.stateData._tarPosition.copy(this._holoScreen.position);
 		}
@@ -1827,13 +1836,15 @@ var LeiaWebGLRenderer = function (parameters) {
 			if(bStateChange == true){
 				var message = JSON.stringify({type:'tuning', data:{_camFov:this._holoCamCenter.fov,
 				_camPosition:{x:this._holoCamCenter.position.x,y:this._holoCamCenter.position.y,z:this._holoCamCenter.position.z},
-				_holoScreenScale:this._holoScreen.scale,
+				_holoScreenScale: this._holoScreen.scale,
+                _holoScreenSize: this._holoScreen.sizeX,
 				_tarPosition:{x:this._holoScreen.position.x,y:this._holoScreen.position.y,z:this._holoScreen.position.z},}
 				});
 				window.top.postMessage(message,"*");
 				this.stateData._camFov = this._holoCamCenter.fov;
 				this.stateData._camPosition.copy(this._holoCamCenter.position);
 				this.stateData._holoScreenScale = this._holoScreen.scale;
+				this.stateData._holoScreenSize = this._holoScreen.sizeX;
 				this.stateData._tarPosition.copy(this._holoScreen.position);
 			}
 			//this.messageFlag++;
@@ -1845,7 +1856,8 @@ var LeiaWebGLRenderer = function (parameters) {
 					var dataObject = {action: "UpdateDisplayParams"};
 					dataObject.params = JSON.stringify({type:'tuning', data:{_camFov:self._holoCamCenter.fov,
 				_camPosition:{x:self._holoCamCenter.position.x,y:self._holoCamCenter.position.y,z:self._holoCamCenter.position.z},
-				_holoScreenScale:self._holoScreen.scale,
+				_holoScreenScale: self._holoScreen.scale,
+				_holoScreenSize: self._holoScreen.sizeX,
 				_tarPosition:{x:self._holoScreen.position.x,y:self._holoScreen.position.y,z:self._holoScreen.position.z},}
 				});
 					var xmlhttp = new XMLHttpRequest();
@@ -1888,6 +1900,7 @@ var LeiaWebGLRenderer = function (parameters) {
 							self._holoCamCenter.setData();
 							
 							self._holoScreen.scale = params.data._holoScreenScale.toFixed(2);
+							self._holoScreen.sizeX = params.data._holoScreenSize.toFixed(2);
 							self._holoScreen.position.x = params.data._tarPosition.x;
 							self._holoScreen.position.y = params.data._tarPosition.y;
 							self._holoScreen.position.z = params.data._tarPosition.z;
@@ -1911,9 +1924,9 @@ var LeiaWebGLRenderer = function (parameters) {
 		}
 	}
 	this.bRendering = true;
-    this.Leia_render = function (scene, camera, renderTarget, forceClear, holoScreenScale, holoCamFov, messageFlag) {
+    this.Leia_render = function (scene, camera, renderTarget, forceClear, holoScreenSize, holoCamFov, messageFlag) {
 		
-		this.SetUpRenderStates(scene, camera, renderTarget, forceClear, holoScreenScale, holoCamFov, messageFlag);
+		this.SetUpRenderStates(scene, camera, renderTarget, forceClear, holoScreenSize, holoCamFov, messageFlag);
 		
 		if (this.bRendering) {
 		    if (this.messageFlag !== 0 || (this.messageFlag == 0 && this.bGlobalView == false && this.bGyroSimView == false)) {

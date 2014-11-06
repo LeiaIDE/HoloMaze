@@ -454,7 +454,7 @@ var code = worker.toString();
         camera.position.copy(_camPosition);
         //camera.lookAt(new THREE.Vector3(0, 15, 0));
         camera.lookAt(_tarPosition);
-        holoScreenScale = _holoScreenScale;
+        //holoScreenScale = _holoScreenScale;
         holoCamFov = _camFov;
         //camera.lookAt(scene.position);
 		ground.add(camera);
@@ -1370,7 +1370,7 @@ var code = worker.toString();
 	    //renderer.render(scene, camera);
 
        // if(frame<=100)
-	    renderer.Leia_render(scene, camera, undefined, undefined, holoScreenScale, holoCamFov,_messageFlag);
+	    renderer.Leia_render(scene, camera, undefined, undefined, _holoScreenSize, holoCamFov,_messageFlag);
 	};
 	function animate () {
 	    render();
