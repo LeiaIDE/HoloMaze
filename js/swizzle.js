@@ -1373,6 +1373,7 @@ var LeiaWebGLRenderer = function (parameters) {
         this.position = new THREE.Vector3(0, 0, 0);
         this.position.copy(camera.targetPosition);
         this.scale = 1.0;
+		var originSize = _sizeX;
         this.sizeX = _sizeX;
 
         //var __point = new THREE.Vector3();
@@ -1398,7 +1399,7 @@ var LeiaWebGLRenderer = function (parameters) {
             //save var _tarPosition in index here 
             this.scale = this.tarObj.scale.x;
             //save var _holoScreenSize in index here 
-            this.sizeX *= this.scale;
+            this.sizeX = originSize * this.scale;
             this.tarObj.rotation.setFromRotationMatrix(camera.matrix);        
         }
         this.setData = function () {
@@ -1408,7 +1409,7 @@ var LeiaWebGLRenderer = function (parameters) {
 			this.tarObj.scale.y = this.scale;
 			this.tarObj.scale.z = this.scale;
             //save var _holoScreenSize in index here
-			this.sizeX *= this.scale;
+			this.sizeX = originSize * this.scale;
             this.tarObj.rotation.setFromRotationMatrix(camera.matrix);
         }
     }
@@ -1852,6 +1853,7 @@ var LeiaWebGLRenderer = function (parameters) {
 			if(bStateChange == true){
 				//this.messageFlag = 0;
 				console.log("post data to emulator");
+				console.log("self._holoScreen.sizeX:" + self._holoScreen.sizeX);
 				 (function(){
 					var dataObject = {action: "UpdateDisplayParams"};
 					dataObject.params = JSON.stringify({type:'tuning', data:{_camFov:self._holoCamCenter.fov,
