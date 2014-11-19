@@ -27,13 +27,16 @@ var code = worker.toString();
 
 	var showWidth =  window.innerWidth;
 	var showHeight = window.innerHeight;
-    console.log("showWidth:" + showWidth);
-    console.log("showHeight:" + showHeight);
+  //  console.log("showWidth:" + showWidth);
+  //  console.log("showHeight:" + showHeight);
 	var frame = 0;
 	var showGview, Gview, Gcamera;
 	var camHeight = 100;
+ window.onload = function (){
+     console.log("onload");
 	initScene();
 	animate();
+ };
 
 	function initScene() {
 	    renderer = new LeiaWebGLRenderer({
