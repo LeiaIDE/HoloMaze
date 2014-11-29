@@ -1,7 +1,10 @@
 <!DOCTYPE html>
    <head>
    	<script src="js/three.min.js"></script>
+       <script src="js/uicontrols.js"></script>
+       
      <script src="js/swizzle.js"></script>
+       <script src="js/shadermanager.js"></script>
   	<script src="js/physi.js"></script>
    	<!--add library above-->
      <meta charset="utf-8">
@@ -39,7 +42,7 @@
              if(this.readyState == this.DONE) {
                if(this.status == 200 && this.response != null ) {
                  var params =  JSON.parse(this.responseText);
-                  
+                   console.log("requested display info:" + this.responseText);
                    if(params.yaw) yaw.innerText = params.yaw;
                    if(params.pitch) pitch.innerText = params.pitch;
                    if(params.roll) roll.innerText = params.roll;
@@ -47,7 +50,7 @@
                  return;
                }else{
                    setTimeout(function(){queryYawPitchRoll()}, 200);
-               //  console.log("something wrong: emulator no response");
+                 console.log("something wrong: emulator no response");
                }               
              }
            };
