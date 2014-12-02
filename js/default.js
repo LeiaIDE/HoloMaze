@@ -46,6 +46,7 @@ var code = worker.toString();
 	        //camPanelVisible: _camPanelVisible,
 	        //gyroPanelVisible: _gyroPanelVisible,
 	        //camFov: _camFov,
+	        colorMode: _colorMode,
 	        devicePixelRatio: 1
 	    });//1
 	    renderer.Leia_setSize(showWidth, showHeight);//2
