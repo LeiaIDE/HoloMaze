@@ -43,9 +43,6 @@ var code = worker.toString();
 	        antialias: true,
 	        renderMode: _renderMode,
 	        shaderMode: _nShaderMode,
-	        //camPanelVisible: _camPanelVisible,
-	        //gyroPanelVisible: _gyroPanelVisible,
-	        //camFov: _camFov,
 	        colorMode: _colorMode,
 	        devicePixelRatio: 1
 	    });//1
@@ -453,12 +450,10 @@ var code = worker.toString();
         // camera
         //camera = new THREE.PerspectiveCamera(55, showWidth / showHeight, 1, 1000);
         //camera = new LeiaCamera(55, showWidth / showHeight, 1, 1000);//3
-        camera = new LeiaCamera();//3
-        //camera.position.set(0, _camPosition, 2);
-        camera.position.copy(_camPosition);
-        //camera.lookAt(new THREE.Vector3(0, 15, 0));
-        camera.lookAt(_tarPosition);
-        //holoScreenScale = _holoScreenScale;
+         camera = new LeiaCamera({
+           cameraPosition:new THREE.Vector3(_camPosition.x, _camPosition.y, _camPosition.z), 
+		   targetPosition: new THREE.Vector3(_tarPosition.x, _tarPosition.y, _tarPosition.z)
+        });
         holoCamFov = _camFov;
         //camera.lookAt(scene.position);
 		ground.add(camera);
