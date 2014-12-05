@@ -451,9 +451,10 @@ var code = worker.toString();
         //camera = new THREE.PerspectiveCamera(55, showWidth / showHeight, 1, 1000);
         //camera = new LeiaCamera(55, showWidth / showHeight, 1, 1000);//3
          camera = new LeiaCamera({
-           cameraPosition:new THREE.Vector3(_camPosition.x, _camPosition.y, _camPosition.z), 
+           cameraPosition: new THREE.Vector3(_camPosition.x, _camPosition.y, _camPosition.z), 
 		   targetPosition: new THREE.Vector3(_tarPosition.x, _tarPosition.y, _tarPosition.z)
-        });
+         });
+         camera.up.set(0, 0, -1);
         holoCamFov = _camFov;
         //camera.lookAt(scene.position);
 		ground.add(camera);
