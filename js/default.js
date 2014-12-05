@@ -1370,7 +1370,13 @@ var code = worker.toString();
 	    //renderer.render(scene, camera);
 
        // if(frame<=100)
-	    renderer.Leia_render(scene, camera, undefined, undefined, _holoScreenSize, holoCamFov,_messageFlag);
+	   renderer.Leia_render({
+		 scene:scene, 
+		 camera:camera,
+		 holoScreenSize:_holoScreenSize,
+		 holoCamFov:_camFov,
+		 messageFlag:_messageFlag
+	   });
 	};
 	function animate () {
 	    render();
