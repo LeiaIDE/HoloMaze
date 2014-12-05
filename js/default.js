@@ -1,4 +1,3 @@
-//FileStart:default.js 
 var code = worker.toString();
 	code = code.substring(code.indexOf("{")+1, code.lastIndexOf("}"));
 	var blob = new Blob([code], {type: "application/javascript"});
