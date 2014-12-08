@@ -1759,6 +1759,8 @@ function render() {
         camera: camera,
         holoScreenSize: _holoScreenSize,
         holoCamFov: _camFov,
+        nearclip: _near,
+        farclip:  _far,
         messageFlag: _messageFlag
     });
 };
