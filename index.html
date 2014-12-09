@@ -2,25 +2,22 @@
   <head>
     <meta charset="utf-8">
     <title>holodev</title>
+    <!--add library here-->
+    <script src="js/three.min.js"></script>      
+    <script src="js/LeiaCore.min.js"></script>
+    <script src="js/physi.js"></script>     
+    
     <script>
         var _renderMode = 'TuningPanelOn';
         var _nShaderMode = "basic";
         var _messageFlag = 'MessageToIDE';
         var _colorMode = "mono";  //"monochrome"
-        var _camPosition = {
-            x: 0.00,
-            y: 100.00,
-            z: 2.00
-        };
-        var _tarPosition = {
-            x: 0.00,
-            y: 15.00,
-            z: 0.00
-        };
+        var _camPosition = {x:0.00,y:100.00,z:2.00};
+        var _tarPosition = {x:0.00,y:15.00,z:0.00};
         var _camFov = 50.00;
         var _holoScreenSize = 200.00;
-        var _up = undefined;
-        var _down = undefined;
+        var _up = 75.00;
+        var _down = -75.00;
     </script>  
     <style type="text/css">
       body {
@@ -33,9 +30,5 @@
     <div id="pitch" style="display: none;">0</div>
     <div id="roll" style="display: none;">0</div>
   </body>
-  <!--add library here-->
-  <script src="js/three.min.js"></script>      
-  <script src="js/LeiaCore.min.js"></script>
-  <script src="js/physi.js"></script>     
   <script src="js/default.js"></script>
 </html>
