@@ -34,13 +34,15 @@ var showHeight = window.innerHeight;
 var frame = 0;
 var showGview, Gview, Gcamera;
 var camHeight = 100;
-window.onload = function() {
-    console.log("onload");
+window.onload = function() {    
     initScene();
     animate();
 };
 
 function initScene() {
+  setInterval(function(){
+    console.log(JSON.stringify(window.Gyro));
+  }, 3000);
     renderer = new LeiaWebGLRenderer({
         antialias: true,
         renderMode: _renderMode,
@@ -1767,8 +1769,7 @@ function render() {
     });
 };
 
-function animate() {
-    console.log(window.Gyro);
+function animate() {    
     render();
     requestAnimationFrame(animate);
 }
