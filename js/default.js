@@ -52,12 +52,17 @@ function initScene() {
     renderer.shadowMapEnabled = true;
     renderer.shadowMapSoft = true;
 
-    var roll = document.getElementById("roll");
-    var pitch = document.getElementById("pitch");
-    var yaw = document.getElementById("yaw");
-    var x_g = Number(pitch.innerText) * -40;
-    var y_g = Number(roll.innerText) * 40;
-    var z_g = Number(yaw.innerText) * 40;
+    //var roll = document.getElementById("roll");
+    //var pitch = document.getElementById("pitch");
+    //var yaw = document.getElementById("yaw");
+    //var x_g = Number(pitch.innerText) * -40;
+    //var y_g = Number(roll.innerText) * 40;
+    //var z_g = Number(yaw.innerText) * 40;
+
+    var x_g = window.Gyro.pitch * 35;//Number(pitch.innerText) * 35;
+    var y_g = window.Gyro.roll * 35;//Number(roll.innerText) * 35;
+    var z_g = -window.Gyro.yaw * 35;//Number(yaw.innerText) * -35;
+
     lastRoll = z_g;
     lastPitch = x_g;
 
@@ -755,13 +760,10 @@ function handleCollision3(collided_with, linearVelocity, angularVelocity) {
 };
 
 function render() {
-    var roll = document.getElementById("roll");
-    var pitch = document.getElementById("pitch");
-    var yaw = document.getElementById("yaw");
     frame++;
-    var x_g = Number(pitch.innerText) * 35;
-    var y_g = Number(roll.innerText) * 35;
-    var z_g = Number(yaw.innerText) * -35;
+    var x_g = window.Gyro.pitch * 35;//Number(pitch.innerText) * 35;
+    var y_g = window.Gyro.roll * 35;//Number(roll.innerText) * 35;
+    var z_g = -window.Gyro.yaw * 35;//Number(yaw.innerText) * -35;
     //console.log("x_g: ", x_g, "y_g: ", y_g, "z_g: ", z_g);
     var totalRoll, totalPitch;
     if (renderer.GyroSimRoll != undefined)
@@ -1766,6 +1768,7 @@ function render() {
 };
 
 function animate() {
+    console.log(window.Gyro);
     render();
     requestAnimationFrame(animate);
 }
