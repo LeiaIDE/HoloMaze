@@ -44,7 +44,7 @@ function initScene() {
     console.log(JSON.stringify(window.Gyro));
   }, 3000);
     renderer = new LeiaWebGLRenderer({
-        antialias: true,
+        antialias: false,
         renderMode: _renderMode,
         shaderMode: _nShaderMode,
         colorMode: _colorMode,
