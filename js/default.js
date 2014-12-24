@@ -1995,7 +1995,7 @@ function worker() {
                     break;
 
                 case 'concave':
-                    var i, triangle, triangle_mesh = new Ammo.btTriangleMesh;
+                    var i, triangle, triangle_mesh = new Ammo.btTriangleMesh();
                     if (!description.triangles.length) return false;
 
                     for (i = 0; i < description.triangles.length; i++) { //noprotect
@@ -2030,7 +2030,7 @@ function worker() {
                     break;
 
                 case 'convex':
-                    var i, point, shape = new Ammo.btConvexHullShape;
+                    var i, point, shape = new Ammo.btConvexHullShape();
                     for (i = 0; i < description.points.length; i++) { //noprotect
                         point = description.points[i];
 
@@ -2074,7 +2074,7 @@ function worker() {
                 default:
                     // Not recognized
                     return;
-                    break;
+                    //break;
             }
 
             return shape;
@@ -2083,7 +2083,7 @@ function worker() {
         public_functions.init = function(params) {
             importScripts(params.ammo);
 
-            _transform = new Ammo.btTransform;
+            _transform = new Ammo.btTransform();
             _vec3_1 = new Ammo.btVector3(0, 0, 0);
             _vec3_2 = new Ammo.btVector3(0, 0, 0);
             _vec3_3 = new Ammo.btVector3(0, 0, 0);
@@ -2108,9 +2108,9 @@ function worker() {
             vehiclereport[0] = MESSAGE_TYPES.VEHICLEREPORT;
             constraintreport[0] = MESSAGE_TYPES.CONSTRAINTREPORT;
 
-            var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration,
+            var collisionConfiguration = new Ammo.btDefaultCollisionConfiguration(),
                 dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration),
-                solver = new Ammo.btSequentialImpulseConstraintSolver,
+                solver = new Ammo.btSequentialImpulseConstraintSolver(),
                 broadphase;
 
             if (!params.broadphase) params.broadphase = {
@@ -2136,7 +2136,7 @@ function worker() {
 
                 case 'dynamic':
                 default:
-                    broadphase = new Ammo.btDbvtBroadphase;
+                    broadphase = new Ammo.btDbvtBroadphase();
                     break;
             }
 
@@ -2178,14 +2178,14 @@ function worker() {
             if (!shape) return;
             // If there are children then this is a compound shape
             if (description.children) {
-                var compound_shape = new Ammo.btCompoundShape,
+                var compound_shape = new Ammo.btCompoundShape(),
                     _child;
                 compound_shape.addChildShape(_transform, shape);
 
                 for (i = 0; i < description.children.length; i++) {
                     _child = description.children[i];
 
-                    var trans = new Ammo.btTransform;
+                    var trans = new Ammo.btTransform();
                     trans.setIdentity();
 
                     _vec3_1.setX(_child.position_offset.x);
@@ -2246,7 +2246,7 @@ function worker() {
             _objects[body.id] = body;
             _motion_states[body.id] = motionState;
 
-            var ptr = body.a != undefined ? body.a : body.ptr;
+            var ptr = body.a !== undefined ? body.a : body.ptr;
             _objects_ammo[ptr] = body.id;
             _num_objects++;
 
@@ -2346,7 +2346,7 @@ function worker() {
             Ammo.destroy(_motion_states[details.id]);
             if (_compound_shapes[details.id]) Ammo.destroy(_compound_shapes[details.id]);
             if (_noncached_shapes[details.id]) Ammo.destroy(_noncached_shapes[details.id]);
-            var ptr = _objects[details.id].a != undefined ? _objects[details.id].a : _objects[details.id].ptr;
+            var ptr = _objects[details.id].a !== undefined ? _objects[details.id].a : _objects[details.id].ptr;
             delete _objects_ammo[ptr];
             delete _objects[details.id];
             delete _motion_states[details.id];
@@ -2626,7 +2626,7 @@ function worker() {
                     }
 
                     Ammo.destroy(transforma);
-                    if (transformb != undefined) {
+                    if (transformb !== undefined) {
                         Ammo.destroy(transformb);
                     }
                     break;
@@ -2716,7 +2716,7 @@ function worker() {
                         );
                     }
                     Ammo.destroy(transforma);
-                    if (transformb != undefined) {
+                    if (transformb !== undefined) {
                         Ammo.destroy(transformb);
                     }
                     break;
