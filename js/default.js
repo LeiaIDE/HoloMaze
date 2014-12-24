@@ -413,8 +413,8 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
             specular: 0xeeeeff,
             shininess: 20
         }), //0x4BD121
-        .4,
-        .8
+        0.4,
+        0.8
     );
 
     var tar_geo_1 = new THREE.BoxGeometry(tar_size, tar_size, tar_size);
@@ -437,8 +437,8 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
             specular: 0xeeeeff,
             shininess: 20
         }), //0x4BD121
-        .4,
-        .8
+        0.4,
+        0.8
     );
     //tar_material_2.map.wrapS = tar_material_2.map.wrapT = THREE.RepeatWrapping;
     //tar_material_2.map.repeat.set(.5, .5);
@@ -462,8 +462,8 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
             specular: 0xeeeeff,
             shininess: 20
         }), //0x4BD121
-        .4,
-        .8
+        0.4,
+        0.8
     );
     var tar_geo_3 = new THREE.BoxGeometry(tar_size, tar_size, tar_size);
     tar_3 = new Physijs.BoxMesh(tar_geo_3, tar_material_3, 0);
@@ -518,9 +518,9 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     light.shadowCameraBottom = 60;
     light.shadowCameraNear = 20;
     light.shadowCameraFar = 200;
-    light.shadowBias = -.0001;
+    light.shadowBias = -0.0001;
     light.shadowMapWidth = light.shadowMapHeight = 512;
-    light.shadowDarkness = .7;
+    light.shadowDarkness = 0.7;
     ground.add(light);
 
 
@@ -539,7 +539,7 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     spawnBall(localP.x, localP.y, localP.z);
 
 
-};
+}
 
 function spawnBall(x, y, z) {
     var material;
@@ -552,8 +552,8 @@ function spawnBall(x, y, z) {
         }),
         //new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture('images/rocks.jpg') }),
         //new THREE.MeshPhongMaterial({ color: 0xaaaaaa, transparent: false, opacity: 0.8, specular: 0xeeeeff, shininess: 20 }),//0x4BD121
-        .6,
-        .9
+        0.6,
+        0.9
     );
     //material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
     //material.map.repeat.set( .5, .5 );
@@ -572,7 +572,7 @@ function spawnBall(x, y, z) {
     scene.add(ball);
 
 
-};
+}
 
 function handleCollision(collided_with, linearVelocity, angularVelocity) {
 
@@ -627,7 +627,7 @@ function handleCollision(collided_with, linearVelocity, angularVelocity) {
             scene.remove(door_1);
             break;
     }
-};
+}
 
 function handleCollision2(collided_with, linearVelocity, angularVelocity) {
 
@@ -684,7 +684,7 @@ function handleCollision2(collided_with, linearVelocity, angularVelocity) {
 
 
     }
-};
+}
 
 function handleCollision3(collided_with, linearVelocity, angularVelocity) {
 
@@ -761,7 +761,7 @@ function handleCollision3(collided_with, linearVelocity, angularVelocity) {
             scene.remove(tar_2);
             break;
     }
-};
+}
 
 function render() {
     frame++;
@@ -770,7 +770,7 @@ function render() {
     var z_g = -window.Gyro.yaw * 35;//Number(yaw.innerText) * -35;
     //console.log("x_g: ", x_g, "y_g: ", y_g, "z_g: ", z_g);
     var totalRoll, totalPitch;
-    if (renderer.GyroSimRoll != undefined)
+    if (renderer.GyroSimRoll !== undefined)
         totalRoll = THREE.Math.degToRad(z_g + renderer.GyroSimRoll);
     else
         totalRoll = THREE.Math.degToRad(z_g);
@@ -1675,7 +1675,7 @@ function render() {
     A_velo = ball.getAngularVelocity();
     var L_velo = new THREE.Vector3();
     L_velo = ball.getLinearVelocity();
-    if (A_velo.x == 0 && A_velo.y == 0 && A_velo.z == 0)
+    if (A_velo.x === 0 && A_velo.y === 0 && A_velo.z === 0)
         ball.setAngularVelocity(new THREE.Vector3(0, 0.01, 0));
     var globalP = new THREE.Vector3();
     globalP.x = ball.position.x;
