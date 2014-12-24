@@ -4,8 +4,7 @@ var blob = new Blob([code], {
     type: "application/javascript"
 });
 var path = URL.createObjectURL(blob);
-Physijs.scripts.worker = path;
-Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
+
 
 var animate, initScene, render, _boxes = [],
     spawnBall, gameStep,
@@ -40,6 +39,9 @@ window.onload = function() {
 };
 
 function initScene() {
+  Physijs.scripts.worker = path;
+Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
+  
   setInterval(function(){
     console.log(JSON.stringify(window.Gyro));
   }, 3000);
