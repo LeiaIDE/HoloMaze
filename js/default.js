@@ -2508,7 +2508,7 @@ function worker() {
 
         public_functions.addConstraint = function(details) {
             var constraint;
-
+           var transforma, transformb, rotation;
             switch (details.type) {
 
                 case 'point':
@@ -2583,7 +2583,7 @@ function worker() {
                     break;
 
                 case 'slider':
-                    var transforma, transformb, rotation;
+                   
 
                     transforma = new Ammo.btTransform();
 
@@ -2593,7 +2593,7 @@ function worker() {
 
                     transforma.setOrigin(_vec3_1);
 
-                    var rotation = transforma.getRotation();
+                     rotation = transforma.getRotation();
                     rotation.setEuler(details.axis.x, details.axis.y, details.axis.z);
                     transforma.setRotation(rotation);
 
@@ -2632,8 +2632,7 @@ function worker() {
                     break;
 
                 case 'conetwist':
-                    var transforma, transformb;
-
+                  
                     transforma = new Ammo.btTransform();
                     transforma.setIdentity();
 
@@ -2651,7 +2650,7 @@ function worker() {
                     transforma.setOrigin(_vec3_1);
                     transformb.setOrigin(_vec3_2);
 
-                    var rotation = transforma.getRotation();
+                     rotation = transforma.getRotation();
                     rotation.setEulerZYX(-details.axisa.z, -details.axisa.y, -details.axisa.x);
                     transforma.setRotation(rotation);
 
@@ -2674,8 +2673,7 @@ function worker() {
                     break;
 
                 case 'dof':
-                    var transforma, transformb, rotation;
-
+                    
                     transforma = new Ammo.btTransform();
                     transforma.setIdentity();
 
