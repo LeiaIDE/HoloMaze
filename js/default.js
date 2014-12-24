@@ -1718,7 +1718,7 @@ function render() {
         }
     }
     var _gP = localP.applyMatrix4(groundMatrix);
-    if (undefined == scene.getObjectByName("ball")) spawnBall(_gP.x, _gP.y, _gP.z);
+    if (undefined === scene.getObjectByName("ball")) spawnBall(_gP.x, _gP.y, _gP.z);
 
 
     var deltaRoll = totalRoll - lastRoll;
@@ -1769,7 +1769,7 @@ function render() {
         downclip:  _down,
         messageFlag: _messageFlag
     });
-};
+}
 
 function animate() {    
     render();
@@ -1792,38 +1792,40 @@ function setResolution(width, height) {
 
 
 document.onkeydown = function(event) {
+     var strValue;
+     var data;
     if (event && event.keyCode == 73) {
 
-        var strValue = document.body.style.marginTop;
-        var data = parseInt(strValue);
-        if (strValue == "") {
+         strValue = document.body.style.marginTop;
+         data = parseInt(strValue);
+        if (strValue === "") {
             data = 0;
         }
         data = data - 1;
         document.body.style.marginTop = data + "px";
     }
     if (event && event.keyCode == 74) {
-        var strValue = document.body.style.marginLeft;
-        var data = parseInt(strValue);
-        if (strValue == "") {
+         strValue = document.body.style.marginLeft;
+         data = parseInt(strValue);
+        if (strValue === "") {
             data = 0;
         }
         data = data - 1;
         document.body.style.marginLeft = data + "px";
     }
     if (event && event.keyCode == 75) {
-        var strValue = document.body.style.marginTop;
-        var data = parseInt(strValue);
-        if (strValue == "") {
+         strValue = document.body.style.marginTop;
+         data = parseInt(strValue);
+        if (strValue === "") {
             data = 0;
         }
         data = data + 1;
         document.body.style.marginTop = data + "px";
     }
     if (event && event.keyCode == 76) {
-        var strValue = document.body.style.marginLeft;
-        var data = parseInt(strValue);
-        if (strValue == "") {
+         strValue = document.body.style.marginLeft;
+         data = parseInt(strValue);
+        if (strValue === "") {
             data = 0;
         }
         data = data + 1;
@@ -2722,7 +2724,7 @@ function worker() {
                 default:
                     return;
 
-            };
+            }
 
             world.addConstraint(constraint);
 
@@ -3093,7 +3095,7 @@ function worker() {
                     break;
                     //}
 
-                    transferableMessage(_objects_ammo);
+                    //transferableMessage(_objects_ammo);
 
                 }
             }
