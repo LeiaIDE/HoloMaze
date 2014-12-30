@@ -52,7 +52,10 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
         colorMode: _colorMode,
         devicePixelRatio: 1
     }); //1
-    renderer.Leia_setSize(showWidth, showHeight); //2
+    renderer.Leia_setSize({		
+            width:showWidth, 
+            height:showHeight, 
+            autoFit:true}); //2
     renderer.shadowMapEnabled = true;
     renderer.shadowMapSoft = true;
 
