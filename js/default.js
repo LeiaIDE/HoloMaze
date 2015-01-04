@@ -25,6 +25,7 @@ var animate, initScene, render, _boxes = [],
     logo_1,
     holoScreenScale,
     holoCamFov;
+var stats;
 
 var showWidth = window.innerWidth;
 var showHeight = window.innerHeight;
@@ -58,7 +59,7 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
             autoFit:true}); //2
     renderer.shadowMapEnabled = true;
     renderer.shadowMapSoft = true;
-
+    stats = new Stats();
     //var roll = document.getElementById("roll");
     //var pitch = document.getElementById("pitch");
     //var yaw = document.getElementById("yaw");
@@ -74,6 +75,10 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     lastPitch = x_g;
 
     document.body.appendChild(renderer.domElement);
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    stats.domElement.style.zIndex = 100;
+    document.body.appendChild(stats.domElement);
     scene = new Physijs.Scene();
     var GravitySim = -9.8 * 20;
     scene.setGravity(new THREE.Vector3(0, GravitySim, 0));
@@ -1777,6 +1782,7 @@ function render() {
 function animate() {    
     render();
     requestAnimationFrame(animate);
+    stats.update();
 }
 
 function setMode(mode) {
