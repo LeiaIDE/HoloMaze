@@ -1775,7 +1775,10 @@ function render() {
         holoCamFov: _camFov,
         upclip: _up,
         downclip:  _down,
-        messageFlag: _messageFlag
+        messageFlag: _messageFlag,
+        filterA: _filterA,
+        filterB: _filterB,
+        filterC: _filterC
     });
 }
 
