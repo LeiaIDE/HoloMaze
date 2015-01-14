@@ -8,6 +8,7 @@
         var _renderMode = 'TuningPanelOn';
         var _nShaderMode = "basic";
         var _colorMode = "mono";  //"monochrome"
+        var _compressFactor =0.8;
 
         var _messageFlag = 'MessageToIDE';
         var _camFov = 50.00;
@@ -17,8 +18,9 @@
         var _filterA =  0.5;
         var _filterB = -0.21;
         var _filterC = -0.06;
+        
 
-        var _camPosition = { x: 0.00, y: 100.00, z: 2.00 };
+        var _camPosition = { x: 0.00, y: 100.00, z: 0.00 };
         var _tarPosition = { x: 0.00, y: 15.00, z: 0.00 };
         var Gyro = {};
     </script>  
@@ -36,7 +38,7 @@
   <!--add library here-->
     <script src="js/three.min.js"></script>
     <script src="js/stats.min.js"></script>
-    <script src="js/LeiaCore-0.0.30.min.js"></script>
+    <script src="js/LeiaCore-0.0.35.min.js"></script>
     <!--script src="js/emulatorctrl.js"></script>
     <script src="js/Leia.js"></script>
     <script src="js/LeiaCamera.js"></script>

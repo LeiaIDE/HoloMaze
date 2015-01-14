@@ -51,6 +51,7 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
         renderMode: _renderMode,
         shaderMode: _nShaderMode,
         colorMode: _colorMode,
+        compFac: _compressFactor,
         devicePixelRatio: 1
     }); //1
     renderer.Leia_setSize({		
@@ -125,6 +126,7 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
         0
     );
     ground.receiveShadow = true;
+    ground.leiaType = 1;
     scene.add(ground);
 
     // plane bottom
@@ -164,7 +166,7 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     logo_1.position.x = 0; //wall_thick / 2;
     logo_1.position.y = 15;
     logo_1.position.z = -30;
-    logo_1.rotation.x = -90;
+    logo_1.rotation.x = THREE.Math.degToRad(-90);
     scene.add(logo_1);
 
 
@@ -512,8 +514,10 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     });
     camera.up.set(0, 0, -1);
     holoCamFov = _camFov;
+    camera.lookAt(camera.targetPosition);
     //camera.lookAt(scene.position);
     ground.add(camera);
+    //scene.add(camera);
 
     // Light
     light = new THREE.DirectionalLight(0xFFFFFF);
@@ -1779,6 +1783,7 @@ function render() {
         filterA: _filterA,
         filterB: _filterB,
         filterC: _filterC
+        
     });
 }
 
