@@ -25,7 +25,7 @@ var animate, initScene, render, _boxes = [],
     logo_1,
     holoScreenScale,
     holoCamFov;
-var stats;
+//var stats;
 
 var showWidth = window.innerWidth;
 var showHeight = window.innerHeight;
@@ -47,12 +47,13 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     console.log(JSON.stringify(window.Gyro));
   }, 3000);
     renderer = new LeiaWebGLRenderer({
-        antialias: false,
+        antialias: true,
         renderMode: _renderMode,
         shaderMode: _nShaderMode,
         colorMode: _colorMode,
         compFac: _compressFactor,
-        devicePixelRatio: 1
+        devicePixelRatio: 1,
+        alpha: true
     }); //1
     renderer.Leia_setSize({		
             width:showWidth, 
@@ -60,7 +61,8 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
             autoFit:true}); //2
     renderer.shadowMapEnabled = true;
     renderer.shadowMapSoft = true;
-    stats = new Stats();
+    Leia_addRender(renderer, { bFPSVisible: true });
+    //stats = new Stats();
     //var roll = document.getElementById("roll");
     //var pitch = document.getElementById("pitch");
     //var yaw = document.getElementById("yaw");
@@ -76,10 +78,10 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     lastPitch = x_g;
 
     document.body.appendChild(renderer.domElement);
-    stats.domElement.style.position = 'absolute';
-    stats.domElement.style.top = '0px';
-    stats.domElement.style.zIndex = 100;
-    document.body.appendChild(stats.domElement);
+    //stats.domElement.style.position = 'absolute';
+    //stats.domElement.style.top = '0px';
+    //stats.domElement.style.zIndex = 100;
+    //document.body.appendChild(stats.domElement);
     scene = new Physijs.Scene();
     var GravitySim = -9.8 * 20;
     scene.setGravity(new THREE.Vector3(0, GravitySim, 0));
@@ -513,7 +515,7 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
         targetPosition: new THREE.Vector3(_tarPosition.x, _tarPosition.y, _tarPosition.z)
     });
     camera.up.set(0, 0, -1);
-    holoCamFov = _camFov;
+    //holoCamFov = _camFov;
     camera.lookAt(camera.targetPosition);
     //camera.lookAt(scene.position);
     ground.add(camera);
@@ -1768,7 +1770,7 @@ function render() {
     renderer.setViewport(0, 0, showWidth, showHeight);
     renderer.setScissor(0, 0, showWidth, showHeight);
     renderer.enableScissorTest(true);
-    renderer.setClearColor(new THREE.Color().setRGB(0.0, 0.0, 0.0));
+    renderer.setClearColor(new THREE.Color().setRGB(0.0, 0.0, 1.0), 0.5);
     //renderer.render(scene, camera);
 
     // if(frame<=100)
@@ -1776,7 +1778,7 @@ function render() {
         scene: scene,
         camera: camera,
         holoScreenSize: _holoScreenSize,
-        holoCamFov: _camFov,
+        //holoCamFov: _camFov,
         upclip: _up,
         downclip:  _down,
         messageFlag: _messageFlag,
@@ -1790,7 +1792,7 @@ function render() {
 function animate() {    
     render();
     requestAnimationFrame(animate);
-    stats.update();
+    //stats.update();
 }
 
 function setMode(mode) {

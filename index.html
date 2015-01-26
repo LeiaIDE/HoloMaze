@@ -11,16 +11,16 @@
         var _compressFactor = 100;
 
         var _messageFlag = 'MessageToIDE';
-        var _camFov = 50.00;
+        //var _camFov = 50.00;
         var _holoScreenSize = 200.00;
-        var _up = 75.00;
-        var _down = -75.00;
+        var _up = undefined;
+        var _down = undefined;
         var _filterA =  0.5;
         var _filterB = -0.21;
         var _filterC = -0.06;
         
 
-        var _camPosition = { x: 0.00, y: 100.00, z: 0.00 };
+        var _camPosition = { x: 0.00, y: 150.00, z: 0.00 };
         var _tarPosition = { x: 0.00, y: 15.00, z: 0.00 };
         var Gyro = {};
     </script>  
@@ -37,9 +37,9 @@
   </body>
   <!--add library here-->
     <script src="js/three.min.js"></script>
-    <script src="js/stats.min.js"></script>
-    <script src="js/LeiaCore-0.0.48.min.js"></script>
-    <!--script src="js/emulatorctrl.js"></!--script>
+    <!--script src="js/stats.min.js"></!--script-->
+    <script src="js/LeiaCore-0.0.60.min.js"></script>
+    <!-- <script src="js/emulatorctrl.js"></script>
     <script src="js/LeiaAPI.js"></script>
     <script src="js/Leia.js"></script>
     <script src="js/LeiaCamera.js"></script>
@@ -47,7 +47,7 @@
     <script src="js/GyroSimulationView.js"></script>      
     <script src="js/leiarenderer.js"></script>
     <script src="js/uicontrols.js"></script>
-    <script src="js/shadermanager.js"></script-->      
+    <script src="js/shadermanager.js"></script>  -->  
     <script src="js/physi.js"></script>  
   <script src="js/default.js"></script>
 
