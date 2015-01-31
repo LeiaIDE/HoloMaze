@@ -34,10 +34,10 @@ var showHeight = window.innerHeight;
 var frame = 0;
 var showGview, Gview, Gcamera;
 var camHeight = 100;
-window.onload = function() {    
-    initScene();
+head.ready(function() {
+    Init();
     animate();
-};
+});
 
 function initScene() {
   Physijs.scripts.worker = path;
@@ -48,17 +48,14 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
   }, 3000);
     renderer = new LeiaWebGLRenderer({
         antialias: true,
-        renderMode: _renderMode,
-        shaderMode: _nShaderMode,
-        colorMode: _colorMode,
-        compFac: _compressFactor,
+        alpha: true,
         devicePixelRatio: 1,
-        alpha: true
+        renderMode: _renderMode,
+        colorMode: _colorMode,
+        ZDPSize: _ZDPSize,
+        tunedsp:_maxDisparity,
+        messageFlag: _targetEnvironment
     }); //1
-    renderer.Leia_setSize({		
-            width:showWidth, 
-            height:showHeight, 
-            autoFit:true}); //2
     renderer.shadowMapEnabled = true;
     renderer.shadowMapSoft = true;
     Leia_addRender(renderer, { bFPSVisible: true });
@@ -77,11 +74,6 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     lastRoll = z_g;
     lastPitch = x_g;
 
-    document.body.appendChild(renderer.domElement);
-    //stats.domElement.style.position = 'absolute';
-    //stats.domElement.style.top = '0px';
-    //stats.domElement.style.zIndex = 100;
-    //document.body.appendChild(stats.domElement);
     scene = new Physijs.Scene();
     var GravitySim = -9.8 * 20;
     scene.setGravity(new THREE.Vector3(0, GravitySim, 0));
@@ -510,9 +502,9 @@ Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     // camera
     //camera = new THREE.PerspectiveCamera(55, showWidth / showHeight, 1, 1000);
     //camera = new LeiaCamera(55, showWidth / showHeight, 1, 1000);//3
-    camera = new LeiaCamera({
-        cameraPosition: new THREE.Vector3(_camPosition.x, _camPosition.y, _camPosition.z),
-        targetPosition: new THREE.Vector3(_tarPosition.x, _tarPosition.y, _tarPosition.z)
+    camera = new LeiaCamera({   dCtoZDP:_ZDPDistanceToCamera,
+        zdpNormal:new THREE.Vector3(_ZDPNormal.x, _ZDPNormal.y, _ZDPNormal.z),
+        targetPosition: new THREE.Vector3(_ZDPCenter.x, _ZDPCenter.y, _ZDPCenter.z)
     });
     camera.up.set(0, 0, -1);
     //holoCamFov = _camFov;
@@ -1776,16 +1768,7 @@ function render() {
     // if(frame<=100)
     renderer.Leia_render({
         scene: scene,
-        camera: camera,
-        holoScreenSize: _holoScreenSize,
-        //holoCamFov: _camFov,
-        upclip: _up,
-        downclip:  _down,
-        messageFlag: _messageFlag,
-        filterA: _filterA,
-        filterB: _filterB,
-        filterC: _filterC
-        
+        camera: camera
     });
 }
 
