@@ -6,24 +6,32 @@
     
     <script>
         var _renderMode = 'TuningPanelOn';
-        var _nShaderMode = "basic";
-        var _colorMode = "mono";  //"monochrome"
-        var _compressFactor = 100;
+        var _targetEnvironment = 'IDE';
 
-        var _messageFlag = 'MessageToIDE';
-        //var _camFov = 50.00;
-        var _holoScreenSize = 200.00;
-        var _up = undefined;
-        var _down = undefined;
-        var _filterA =  0.5;
-        var _filterB = -0.21;
-        var _filterC = -0.06;
-        
+        var _colorMode = "monochrome";
+      
+        var _ZDPNormal = {x:0.00,y:0.00,z:1.00};
+        var _ZDPDistanceToCamera = 817.55;
+        var _ZDPCenter = {x:0.00,y:1.41,z:0.00};
+        var _ZDPSize = 64.84;
 
-        var _camPosition = { x: 0.00, y: 150.00, z: 0.00 };
-        var _tarPosition = { x: 0.00, y: 15.00, z: 0.00 };
+        var _maxDisparity = 5.00;
+        var _baselineScale = 1.00;
+      
+      //read only
+         var _up = 11.99;
+         var _down = -12.35;
+         var _camPosition = {x:0.00,y:1.41,z:817.55};
         var Gyro = {};
     </script>  
+    <script src="https://s3.amazonaws.com/leiacore/head.load.min.js"></script>
+    <script>
+        //add library here
+        head.load(["https://s3.amazonaws.com/leiacore/three.min.js",
+            "https://s3.amazonaws.com/leiacore/LeiaCore-latest.min.js",
+            "js/physi.js"
+        ]);
+    </script>
     <style type="text/css">
       body {
         overflow:hidden;
@@ -35,21 +43,6 @@
     <div id="pitch" style="display: none;">0</div>
     <div id="roll" style="display: none;">0</div>
   </body>
-  <!--add library here-->
-    <script src="js/three.min.js"></script>
-    
-    <script src="js/LeiaCore-0.0.62.min.js"></script>
-   <!--  <script src="js/thirdparty/stats.min.js"></script>
-    <script src="js/emulatorctrl.js"></script>
-    <script src="js/LeiaAPI.js"></script>
-    <script src="js/Leia.js"></script>
-    <script src="js/LeiaCamera.js"></script>
-    <script src="js/GlobalView.js"></script>
-    <script src="js/GyroSimulationView.js"></script>      
-    <script src="js/leiarenderer.js"></script>
-    <script src="js/uicontrols.js"></script>
-    <script src="js/shadermanager.js"></script>   --> 
-    <script src="js/physi.js"></script>  
   <script src="js/default.js"></script>
 
 </html>
