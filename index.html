@@ -29,11 +29,25 @@
         var _camPosition = {x:0.00,y:164.01,z:0.00};
         var Gyro = {};
     </script>
-   <script src="https://s3.amazonaws.com/leiacore/head.load.min.js"></script>
+   <!--<script src="https://s3.amazonaws.com/leiacore/head.load.min.js"></script>-->
+    <script src="js/head.load.min.js"></script>
     <script>
         //add library here
-        head.load(["https://s3.amazonaws.com/leiacore/three.min.js",
-            "https://s3.amazonaws.com/leiacore/LeiaCore-latest.min.js",
+        head.load([
+            //"https://s3.amazonaws.com/leiacore/three.min.js",
+            "js/three.min.js",
+            //"https://s3.amazonaws.com/leiacore/LeiaCore-latest.min.js",
+            "js/LeiaCore-0.0.82.min.js",
+            //"js/thirdparty/stats.min.js",
+            //"js/emulatorctrl.js",
+            //"js/LeiaAPI.js",
+            //"js/Leia.js",
+            //"js/LeiaCamera.js",
+            //"js/GlobalView.js",
+            //"js/GyroSimulationView.js",      
+            //"js/leiarenderer.js",
+            //"js/uicontrols.js",
+            //"js/shadermanager.js",
             "js/physi.js"
         ]);
     </script>
