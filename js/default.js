@@ -32,10 +32,10 @@ var showHeight = window.innerHeight;
 var frame = 0;
 var showGview, Gview, Gcamera;
 var camHeight = 100;
-head.ready(function() {
+window.onload = function() {
     initScene();
     animate();
-});
+};
 
 
 
