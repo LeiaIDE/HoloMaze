@@ -1,52 +1,68 @@
 <!DOCTYPE html>
 
 <head>
-  <meta charset="utf-8">
-  <title>holodev</title>
+    <meta charset="utf-8">
+    <title>holodev</title>
 
 
-  <script>
-    var _renderMode = 'TuningPanelOn';
-    var _targetEnvironment = 'IDE';
+    <script>
+        var _renderMode = 'TuningPanelOn';
+        var _targetEnvironment = 'IDE';
 
-    var _colorMode = "monochrome";
+        var _colorMode = "monochrome";
 
-    var _ZDPNormal = {
-      x: 0.00,
-      y: 1.00,
-      z: 0.00
-    };
-    var _ZDPDistanceToCamera = 100.00;
-    var _ZDPCenter = {x:0.00,y:15.00,z:0.00};
-    var _ZDPSize = 200.00;
+        var _ZDPNormal = {
+            x: 0.00,
+            y: 1.00,
+            z: 0.00
+        };
+        var _ZDPDistanceToCamera = 100;
+        var _ZDPCenter = {x:0.00,y:15.00,z:0.00};
+        var _ZDPSize = 200.0;
 
-    var _maxDisparity = 5.00;
-    var _baselineScale = 1.00;
+        var _maxDisparity = 5.00;
+        var _baselineScale = 1.0;
 
-    //read only
-    var _up = 27.29;
-    var _down = -60.07;
-    var _camPosition = {x:0.00,y:115.00,z:0.00};
-    var Gyro = {};
-
-  </script>
-
-  <style type="text/css">
-    body {
-      overflow: hidden;
-    }
-
-  </style>
+        //read only
+        var _up = 25.55;
+        var _down = -39.01;
+        var _camPosition = {x:0.00,y:164.01,z:0.00};
+        var Gyro = {};
+    </script>
+   <!--<script src="https://s3.amazonaws.com/leiacore/head.load.min.js"></script>-->
+    <script src="js/head.load.min.js"></script>
+    <script>
+        //add library here
+        head.load([
+            //"https://s3.amazonaws.com/leiacore/three.min.js",
+            "js/three.js",
+            //"https://s3.amazonaws.com/leiacore/LeiaCore-latest.min.js",
+            "js/LeiaCore-0.0.98.min.js",
+            //"js/thirdparty/stats.min.js",
+            //"js/emulatorctrl.js",
+            //"js/LeiaAPI.js",
+            //"js/LeiaScreen.js",
+            //"js/Leia.js",
+            //"js/LeiaCamera.js", 
+            //"js/GlobalView.js",
+            //"js/GyroSimulationView.js",      
+            //"js/leiarenderer.js",
+            //"js/uicontrols.js",
+            //"js/shadermanager.js",
+            "js/physi.js"
+        ]);
+    </script>
+    <style type="text/css">
+        body {
+            overflow: hidden;
+        }
+    </style>
 </head>
-<!--- add library here --->
-<script src="js/three.min.js"></script>
-<script src="js/LeiaCore-0.0.82.min.js"></script>
-<script src="js/physi.js"></script>
 
 <body>
-  <div id="yaw" style="display: none;">0</div>
-  <div id="pitch" style="display: none;">0</div>
-  <div id="roll" style="display: none;">0</div>
+    <div id="yaw" style="display: none;">0</div>
+    <div id="pitch" style="display: none;">0</div>
+    <div id="roll" style="display: none;">0</div>
 </body>
 
 <script src="js/default.js"></script>
