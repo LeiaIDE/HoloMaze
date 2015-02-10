@@ -49,8 +49,6 @@ function initScene() {
     Physijs.scripts.ammo = 'https://holodevuserresource.s3.amazonaws.com/ammo.js';
     //leiaDisplay = new LeiaPhysicalScreen();
     //leiaScreen = new LeiaVirtualScreen(_ZDPSize, _maxDisparity, _baselineScale, _ZDPDistanceToCamera, _ZDPNormal, _ZDPCenter);
-    
-    LEIA.physicalScreen;
     //LEIA.virtualScreen.loadPara(_ZDPSize, _maxDisparity, _baselineScale, _ZDPDistanceToCamera, _ZDPNormal, _ZDPCenter);
     LEIA.virtualScreen.Init();
     setInterval(function() {
